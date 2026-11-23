@@ -423,10 +423,10 @@ async function renderServiceRequestView() {
   if (!wrap || !currentUser) return;
   wrap.classList.remove('hidden');
   wrap.innerHTML = '<strong>طلباتي السابقة</strong><p style="color:var(--text-muted);font-size:.8rem;">جاري التحميل...</p>';
-  const { data, error } = await sb.from('service_requests').select('id,category,area,details,status,created_at').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(20);
+  const { data, error } = await sb.from('service_requests').select('id,category,area,details,status,assigned_provider_name,assigned_provider_phone,assignment_notes,created_at').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(20);
   if (error) { wrap.innerHTML = '<strong>طلباتك السابقة</strong><p style="color:var(--text-muted);font-size:.8rem;">نفّذ تحديث قاعدة البيانات المرفق لتفعيل سجل الطلبات.</p>'; return; }
-  const labels = {new:'جديد',reviewing:'قيد المتابعة',assigned:'تم توجيهه',completed:'مكتمل',cancelled:'ملغي'};
-  wrap.innerHTML = '<strong>طلباتي السابقة</strong>' + ((data||[]).map(r=>`<div class="review-item"><div style="display:flex;justify-content:space-between;gap:8px;"><b>${escapeHtml(r.category)}</b><span class="request-status">${labels[r.status]||'قيد المتابعة'}</span></div><div style="font-size:.76rem;color:var(--text-muted);margin-top:4px;">${escapeHtml(r.area)} • ${new Date(r.created_at).toLocaleDateString('ar-IQ')}</div><p style="font-size:.82rem;margin:5px 0 0;">${escapeHtml(r.details)}</p></div>`).join('') || '<p style="color:var(--text-muted);font-size:.82rem;">ما عندك طلبات سابقة حالياً.</p>');
+  const labels = {new:'وصلنا طلبك',reviewing:'الإدارة تراجع طلبك',assigned:'تم ربطك بمقدم خدمة',completed:'مكتمل',cancelled:'ملغي'};
+  wrap.innerHTML = '<strong>طلباتي السابقة</strong>' + ((data||[]).map(r=>`<div class="review-item"><div style="display:flex;justify-content:space-between;gap:8px;"><b>${escapeHtml(r.category)}</b><span class="request-status">${labels[r.status]||'قيد المتابعة'}</span></div><div style="font-size:.76rem;color:var(--text-muted);margin-top:4px;">${escapeHtml(r.area)} • ${new Date(r.created_at).toLocaleDateString('ar-IQ')}</div><p style="font-size:.82rem;margin:5px 0 0;">${escapeHtml(r.details)}</p>${r.status === 'assigned' && r.assigned_provider_name ? `<div class="msg-box msg-ok" style="margin-top:10px;"><strong>مقدم الخدمة: ${escapeHtml(r.assigned_provider_name)}</strong>${r.assigned_provider_phone ? `<div style="margin-top:5px;">رقم التواصل: ${escapeHtml(r.assigned_provider_phone)} ${/^9647\d{9}$/.test(formatWhatsApp(r.assigned_provider_phone)) ? `<a class="btn btn-green btn-sm" style="margin-inline-start:6px;" href="https://wa.me/${formatWhatsApp(r.assigned_provider_phone)}" target="_blank" rel="noopener noreferrer">واتساب</a>` : ''}</div>` : ''}${r.assignment_notes ? `<p style="margin:5px 0 0;">${escapeHtml(r.assignment_notes)}</p>` : ''}</div>` : ''}</div>`).join('') || '<p style="color:var(--text-muted);font-size:.82rem;">ما عندك طلبات سابقة حالياً.</p>');
 }
 
 async function submitServiceRequest() {
@@ -1251,7 +1251,9 @@ async function loadAdminTab(tab, btnEl) {
       const waPhone = formatWhatsApp(r.phone);
       const waMessage = encodeURIComponent(`مرحباً، نتواصل معك بخصوص طلبك في ويز اليوسفية: ${r.category} - ${r.area}.`);
       const waLink = /^9647\d{9}$/.test(waPhone) ? `https://wa.me/${waPhone}?text=${waMessage}` : '';
-      return `<div class="panel-card"><div style="display:flex;justify-content:space-between;gap:8px;"><strong>${escapeHtml(r.category)}</strong><span class="request-status">${statusLabels[r.status]||r.status}</span></div><p style="font-size:.82rem;color:var(--text-muted);">${escapeHtml(r.area)} • ${escapeHtml(r.phone)}</p><p style="font-size:.85rem;">${escapeHtml(r.details)}</p><small style="color:var(--text-faint);">${new Date(r.created_at).toLocaleString('ar-IQ')}</small><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">${waLink ? `<a class="btn btn-green btn-sm" href="${waLink}" target="_blank" rel="noopener noreferrer">تواصل واتساب</a>` : '<span class="request-status">تحقق من رقم الهاتف</span>'}<button class="btn btn-outline btn-sm" onclick="adminSetRequestStatus('${r.id}','reviewing')">قيد المتابعة</button><button class="btn btn-green btn-sm" onclick="adminSetRequestStatus('${r.id}','assigned')">تم توجيهه</button><button class="btn btn-primary btn-sm" onclick="adminSetRequestStatus('${r.id}','completed')">مكتمل</button><button class="btn btn-red btn-sm" onclick="adminSetRequestStatus('${r.id}','cancelled')">إلغاء</button></div></div>`;
+      const providerPhone = formatWhatsApp(r.assigned_provider_phone);
+      const providerLink = /^9647\d{9}$/.test(providerPhone) ? `https://wa.me/${providerPhone}?text=${encodeURIComponent(`مرحباً، معك إدارة ويز اليوسفية. لدينا طلب ${r.category} في ${r.area}. هل يمكنك استلامه؟`)}` : '';
+      return `<div class="panel-card"><div style="display:flex;justify-content:space-between;gap:8px;"><strong>${escapeHtml(r.category)}</strong><span class="request-status">${statusLabels[r.status]||r.status}</span></div><p style="font-size:.82rem;color:var(--text-muted);">${escapeHtml(r.area)} • ${escapeHtml(r.phone)}</p><p style="font-size:.85rem;">${escapeHtml(r.details)}</p><small style="color:var(--text-faint);">${new Date(r.created_at).toLocaleString('ar-IQ')}</small><div class="form-group" style="margin-top:12px;"><label>اسم مقدم الخدمة الذي اخترته</label><input id="provider-name-${r.id}" class="form-control" maxlength="100" value="${escapeHtml(r.assigned_provider_name||'')}" placeholder="اسم الشخص أو الجهة" /></div><div class="form-group"><label>رقم مقدم الخدمة</label><input id="provider-phone-${r.id}" class="form-control" type="tel" maxlength="20" value="${escapeHtml(r.assigned_provider_phone||'')}" placeholder="07xxxxxxxxx" /></div><div class="form-group"><label>ملاحظة للمستخدم (اختياري)</label><input id="provider-notes-${r.id}" class="form-control" maxlength="250" value="${escapeHtml(r.assignment_notes||'')}" placeholder="مثلاً: سيتواصل معك خلال نصف ساعة" /></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">${waLink ? `<a class="btn btn-outline btn-sm" href="${waLink}" target="_blank" rel="noopener noreferrer">مراسلة صاحب الطلب</a>` : '<span class="request-status">تحقق من رقم صاحب الطلب</span>'}${providerLink ? `<a class="btn btn-green btn-sm" href="${providerLink}" target="_blank" rel="noopener noreferrer">مراسلة مقدم الخدمة</a>` : ''}<button class="btn btn-green btn-sm" onclick="adminAssignServiceProvider('${r.id}')">حفظ التوجيه وإبلاغ المستخدم</button><button class="btn btn-outline btn-sm" onclick="adminSetRequestStatus('${r.id}','reviewing')">قيد المتابعة</button><button class="btn btn-primary btn-sm" onclick="adminSetRequestStatus('${r.id}','completed')">مكتمل</button><button class="btn btn-red btn-sm" onclick="adminSetRequestStatus('${r.id}','cancelled')">إلغاء</button></div></div>`;
     }).join('') || '<div class="panel-card">لا توجد طلبات خدمة حتى الآن.</div>';
   } else if (tab === 'community') {
     const { data, error } = await sb.from('community_posts').select('*').order('created_at',{ascending:false}).limit(50);
@@ -1283,6 +1285,25 @@ async function loadAdminTab(tab, btnEl) {
       </div>
     `;
   }
+}
+
+async function adminAssignServiceProvider(id) {
+  const name = document.getElementById(`provider-name-${id}`)?.value.trim() || '';
+  const phone = cleanPhone(document.getElementById(`provider-phone-${id}`)?.value || '');
+  const notes = document.getElementById(`provider-notes-${id}`)?.value.trim() || '';
+  if (name.length < 2 || phone.replace(/\D/g, '').length < 10) {
+    return showToast('اكتب اسم مقدم الخدمة ورقم هاتف صحيح قبل حفظ التوجيه.','err');
+  }
+  const { error } = await sb.from('service_requests').update({
+    assigned_provider_name: name,
+    assigned_provider_phone: phone,
+    assignment_notes: notes || null,
+    status: 'assigned',
+    updated_at: new Date().toISOString()
+  }).eq('id', id);
+  if (error) return showToast('تعذر حفظ التوجيه. تأكد من تنفيذ تحديث قاعدة البيانات: ' + error.message,'err');
+  showToast('تم حفظ مقدم الخدمة وتحديث حالة الطلب.','ok');
+  await loadAdminTab('requests');
 }
 
 async function adminSetRequestStatus(id,status) {

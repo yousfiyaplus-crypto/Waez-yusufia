@@ -61,9 +61,17 @@ create table if not exists public.service_requests (
   phone text not null check (char_length(phone) between 8 and 20),
   details text not null check (char_length(trim(details)) between 8 and 1000),
   status text not null default 'new' check (status in ('new','reviewing','assigned','completed','cancelled')),
+  assigned_provider_name text check (assigned_provider_name is null or char_length(trim(assigned_provider_name)) between 2 and 100),
+  assigned_provider_phone text check (assigned_provider_phone is null or char_length(assigned_provider_phone) between 8 and 20),
+  assignment_notes text check (assignment_notes is null or char_length(assignment_notes) <= 250),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- أعمدة ربط مقدم الخدمة (آمنة للتحديث على جدول موجود مسبقاً).
+alter table public.service_requests add column if not exists assigned_provider_name text;
+alter table public.service_requests add column if not exists assigned_provider_phone text;
+alter table public.service_requests add column if not exists assignment_notes text;
 
 create index if not exists service_requests_user_created_idx
   on public.service_requests (user_id, created_at desc);
