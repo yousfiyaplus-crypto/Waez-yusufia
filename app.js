@@ -443,6 +443,9 @@ async function submitServiceRequest() {
   if (error) return showMsg('sr-message','تعذر إرسال الطلب: ' + error.message,false);
   document.getElementById('sr-details').value = '';
   showMsg('sr-message','وصل طلبك بنجاح. تگدر تتابع حالته من طلباتي السابقة.',true);
+  document.getElementById('sr-category').value = '';
+  document.getElementById('sr-area').value = '';
+  document.getElementById('sr-phone').value = '';
   await renderServiceRequestView();
 }
 
@@ -1244,7 +1247,12 @@ async function loadAdminTab(tab, btnEl) {
     const { data, error } = await sb.from('service_requests').select('*').order('created_at',{ascending:false}).limit(100);
     if (error) { body.innerHTML = '<div class="panel-card">نفّذ ملف SQL المرفق لتفعيل طلبات الخدمات.</div>'; return; }
     const statusLabels = {new:'جديد',reviewing:'قيد المتابعة',assigned:'تم توجيهه',completed:'مكتمل',cancelled:'ملغي'};
-    body.innerHTML = (data||[]).map(r=>`<div class="panel-card"><div style="display:flex;justify-content:space-between;gap:8px;"><strong>${escapeHtml(r.category)}</strong><span class="request-status">${statusLabels[r.status]||r.status}</span></div><p style="font-size:.82rem;color:var(--text-muted);">${escapeHtml(r.area)} • ${escapeHtml(r.phone)}</p><p style="font-size:.85rem;">${escapeHtml(r.details)}</p><small style="color:var(--text-faint);">${new Date(r.created_at).toLocaleString('ar-IQ')}</small><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;"><button class="btn btn-outline btn-sm" onclick="adminSetRequestStatus('${r.id}','reviewing')">قيد المتابعة</button><button class="btn btn-green btn-sm" onclick="adminSetRequestStatus('${r.id}','assigned')">تم التوجيه</button><button class="btn btn-primary btn-sm" onclick="adminSetRequestStatus('${r.id}','completed')">مكتمل</button><button class="btn btn-red btn-sm" onclick="adminSetRequestStatus('${r.id}','cancelled')">إلغاء</button></div></div>`).join('') || '<div class="panel-card">لا توجد طلبات خدمة حتى الآن.</div>';
+    body.innerHTML = (data||[]).map(r=>{
+      const waPhone = formatWhatsApp(r.phone);
+      const waMessage = encodeURIComponent(`مرحباً، نتواصل معك بخصوص طلبك في ويز اليوسفية: ${r.category} - ${r.area}.`);
+      const waLink = /^9647\d{9}$/.test(waPhone) ? `https://wa.me/${waPhone}?text=${waMessage}` : '';
+      return `<div class="panel-card"><div style="display:flex;justify-content:space-between;gap:8px;"><strong>${escapeHtml(r.category)}</strong><span class="request-status">${statusLabels[r.status]||r.status}</span></div><p style="font-size:.82rem;color:var(--text-muted);">${escapeHtml(r.area)} • ${escapeHtml(r.phone)}</p><p style="font-size:.85rem;">${escapeHtml(r.details)}</p><small style="color:var(--text-faint);">${new Date(r.created_at).toLocaleString('ar-IQ')}</small><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">${waLink ? `<a class="btn btn-green btn-sm" href="${waLink}" target="_blank" rel="noopener noreferrer">تواصل واتساب</a>` : '<span class="request-status">تحقق من رقم الهاتف</span>'}<button class="btn btn-outline btn-sm" onclick="adminSetRequestStatus('${r.id}','reviewing')">قيد المتابعة</button><button class="btn btn-green btn-sm" onclick="adminSetRequestStatus('${r.id}','assigned')">تم توجيهه</button><button class="btn btn-primary btn-sm" onclick="adminSetRequestStatus('${r.id}','completed')">مكتمل</button><button class="btn btn-red btn-sm" onclick="adminSetRequestStatus('${r.id}','cancelled')">إلغاء</button></div></div>`;
+    }).join('') || '<div class="panel-card">لا توجد طلبات خدمة حتى الآن.</div>';
   } else if (tab === 'community') {
     const { data, error } = await sb.from('community_posts').select('*').order('created_at',{ascending:false}).limit(50);
     if (error) {
@@ -1256,7 +1264,7 @@ async function loadAdminTab(tab, btnEl) {
         <h4 style="margin:0 0 12px;">نشر تحديث محلي جديد</h4>
         <div class="form-group"><label for="cp-title">العنوان</label><input id="cp-title" class="form-control" maxlength="100" placeholder="مثال: انقطاع الماء في حي ..." /></div>
         <div class="form-group"><label for="cp-body">التفاصيل</label><textarea id="cp-body" class="form-control" rows="3" maxlength="1000" placeholder="اكتب التفاصيل بوضوح..."></textarea></div>
-        <div class="form-group"><label for="cp-kind">نوع التحديث</label><select id="cp-kind" class="form-control"><option value="news">خبر محلي</option><option value="alert">تنبيه مهم</option><option value="offer">عرض تجاري</option></select></div>
+        <div class="form-group"><label for="cp-kind">نوع التحديث</label><select id="cp-kind" class="form-control"><option value="news">خبر محلي — بطاقة بيضاء</option><option value="alert">تنبيه مهم — بطاقة حمراء</option><option value="offer">عرض تجاري — بطاقة خضراء</option></select><small style="display:block;color:var(--text-muted);margin-top:5px;">لون البطاقة يتغير تلقائياً حسب النوع الذي تختاره.</small></div>
         <div class="form-group"><label for="cp-area">المنطقة (اختياري)</label><input id="cp-area" class="form-control" maxlength="80" placeholder="مثال: مركز اليوسفية" /></div>
         <div class="form-group"><label for="cp-days">مدة الظهور</label><select id="cp-days" class="form-control"><option value="1">يوم واحد</option><option value="3" selected>3 أيام</option><option value="7">أسبوع</option><option value="30">شهر</option><option value="0">بدون انتهاء تلقائي</option></select></div>
         <button class="btn btn-primary btn-block" onclick="submitCommunityPost()">نشر التحديث</button>
@@ -1278,7 +1286,7 @@ async function loadAdminTab(tab, btnEl) {
 }
 
 async function adminSetRequestStatus(id,status) {
-  const { error } = await sb.from('service_requests').update({status}).eq('id',id);
+  const { error } = await sb.from('service_requests').update({status,updated_at:new Date().toISOString()}).eq('id',id);
   if (error) return showToast('تعذر تحديث الطلب: '+error.message,'err');
   loadAdminTab('requests');
 }
