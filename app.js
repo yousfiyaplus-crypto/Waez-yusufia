@@ -573,7 +573,7 @@ async function openShopModal(shopId) {
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;">
       <a class="btn btn-green btn-sm" href="tel:${cleanPhone(shop.phone)}" onclick="trackMetric('${shop.id}','click')">📞 اتصال مباشر</a>
       <a class="btn btn-primary btn-sm" target="_blank" rel="noopener" href="https://wa.me/${waNum}" onclick="trackMetric('${shop.id}','click')">💬 واتساب</a>
-      ${showDir ? `<a class="btn btn-outline btn-sm" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${shop.lat},${shop.lng}" onclick="trackMetric('${shop.id}','click')">📍 فتح المسار</a>` : ''}
+      ${showDir ? `<button type="button" class="btn btn-outline btn-sm" onclick="showRouteInApp('${shop.id}')">📍 المسار</button>` : ''}
       <button class="btn btn-outline btn-sm" onclick="toggleFav('${shop.id}')">${isFav ? '❤️ محفوظ بالمفضلة' : '🤍 حفظ بالمفضلة'}</button>
     </div>
 
