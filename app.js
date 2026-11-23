@@ -13,6 +13,7 @@ let currentProfile = null;
 let categories = [];
 let allShops = [];
 let communityPosts = [];
+let communityFilter = 'all';
 let reviewsSummary = {}; // { shopId: { avg, count } }
 let mapEnabledSetting = true;
 let selectedCategory = 'all';
@@ -451,17 +452,37 @@ async function loadCommunityPosts() {
   renderCommunityPosts();
 }
 
+function setCommunityFilter(filter) {
+  communityFilter = ['all','news','alert','offer'].includes(filter) ? filter : 'all';
+  document.querySelectorAll('[data-community-filter]').forEach(btn => {
+    const active = btn.dataset.communityFilter === communityFilter;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+  renderCommunityPosts();
+}
+
 function renderCommunityPosts() {
   const section = document.getElementById('community-pulse');
   const wrap = document.getElementById('community-posts-list');
+  const filters = document.getElementById('community-post-filters');
   if (!section || !wrap) return;
   section.classList.toggle('hidden', communityPosts.length === 0);
-  wrap.innerHTML = communityPosts.map(post => {
+  if (filters) filters.classList.toggle('hidden', communityPosts.length < 2);
+  const visiblePosts = communityFilter === 'all' ? communityPosts : communityPosts.filter(post => post.kind === communityFilter);
+  if (!visiblePosts.length) {
+    wrap.innerHTML = '<div class="pulse-empty">ماكو تحديثات ضمن هذا التصنيف حالياً.</div>';
+    return;
+  }
+  wrap.innerHTML = visiblePosts.map(post => {
     const kind = ['news','offer','alert'].includes(post.kind) ? post.kind : 'news';
     const symbol = kind === 'offer' ? '٪' : kind === 'alert' ? '!' : '●';
-    const label = kind === 'offer' ? 'عرض' : kind === 'alert' ? 'تنبيه' : 'خبر محلي';
+    const label = kind === 'offer' ? 'عرض تجاري' : kind === 'alert' ? 'تنبيه مهم' : 'خبر محلي';
     const date = post.created_at ? new Date(post.created_at).toLocaleDateString('ar-IQ',{day:'numeric',month:'short'}) : '';
-    return `<article class="pulse-card ${kind}"><div class="pulse-symbol">${symbol}</div><div class="pulse-content"><strong>${escapeHtml(post.title)}</strong><p>${escapeHtml(post.body)}</p><div class="pulse-meta"><span>${label}</span>${post.area ? `<span>• ${escapeHtml(post.area)}</span>` : ''}${date ? `<span>• ${date}</span>` : ''}</div></div></article>`;
+    const expiry = post.expires_at ? new Date(post.expires_at) : null;
+    const remaining = expiry && !Number.isNaN(expiry.getTime()) ? Math.ceil((expiry.getTime()-Date.now())/86400000) : null;
+    const expiryLabel = remaining !== null && remaining >= 0 && remaining <= 1 ? 'ينتهي قريباً' : '';
+    return `<article class="pulse-card ${kind}"><div class="pulse-symbol" aria-hidden="true">${symbol}</div><div class="pulse-content"><strong>${escapeHtml(post.title)}</strong><p>${escapeHtml(post.body)}</p><div class="pulse-meta"><span>${label}</span>${post.area ? `<span>• ${escapeHtml(post.area)}</span>` : ''}${date ? `<span>• ${date}</span>` : ''}${expiryLabel ? `<span class="pulse-time">${expiryLabel}</span>` : ''}</div></div></article>`;
   }).join('');
 }
 
@@ -476,6 +497,7 @@ async function submitCommunityPost() {
   const expires_at = days > 0 ? new Date(Date.now() + days * 86400000).toISOString() : null;
   const { error } = await sb.from('community_posts').insert({title,body,kind,area,expires_at,status:'published',created_by:currentUser.id});
   if (error) return showToast('تعذر النشر: ' + error.message,'err',4500);
+  communityFilter = 'all';
   showToast('تم نشر التحديث المحلي.','ok');
   loadAdminTab('community');
   await loadCommunityPosts();
