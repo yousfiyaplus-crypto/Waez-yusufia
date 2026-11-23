@@ -513,7 +513,7 @@ function renderShops() {
         <div class="shop-actions ${showDir ? '' : 'two-cols'}">
           <a class="action-btn action-call" href="tel:${cleanPhone(s.phone)}" onclick="trackMetric('${s.id}','click')">📞 اتصال</a>
           <a class="action-btn action-wa" target="_blank" rel="noopener" href="https://wa.me/${waNum}" onclick="trackMetric('${s.id}','click')">💬 واتساب</a>
-          ${showDir ? `<a class="action-btn action-map" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}" onclick="trackMetric('${s.id}','click')">📍 المسار</a>` : ''}
+          ${showDir ? `<button type="button" class="action-btn action-map" onclick="showRouteInApp('${s.id}')">📍 المسار</button>` : ''}
         </div>
       </article>
     `;
