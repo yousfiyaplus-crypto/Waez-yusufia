@@ -121,6 +121,16 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
 
   initMainMap();
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(evt => {
+    document.addEventListener(evt, (e) => {
+      if (!e.target.closest('.leaflet-container')) e.preventDefault();
+    }, { passive: false });
+  });
+  document.addEventListener('touchmove', (e) => {
+    if (e.touches && e.touches.length > 1 && !e.target.closest('.leaflet-container')) {
+      e.preventDefault();
+    }
+  }, { passive: false });
   await checkAuthSession();
   await loadInitialData();
 
