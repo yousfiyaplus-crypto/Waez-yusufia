@@ -12,6 +12,7 @@ let currentUser = null;
 let currentProfile = null;
 let categories = [];
 let allShops = [];
+let communityPosts = [];
 let reviewsSummary = {}; // { shopId: { avg, count } }
 let mapEnabledSetting = true;
 let selectedCategory = 'all';
@@ -264,7 +265,7 @@ function installPWA() {
 
 // ===== التنقل =====
 function switchView(viewName) {
-  ['home', 'owner', 'admin', 'auth'].forEach(v => {
+  ['home', 'request', 'owner', 'admin', 'auth'].forEach(v => {
     const el = document.getElementById(`view-${v}`);
     const show = v === viewName;
     el.classList.toggle('hidden', !show);
@@ -276,6 +277,8 @@ function switchView(viewName) {
 
   if (viewName === 'home' && mainMap) {
     setTimeout(() => mainMap.invalidateSize(), 200);
+  } else if (viewName === 'request') {
+    renderServiceRequestView();
   } else if (viewName === 'owner') {
     renderOwnerSection();
   } else if (viewName === 'admin' && currentProfile?.role === 'admin') {
@@ -306,6 +309,8 @@ function updateAuthUI() {
   const authForms = document.getElementById('auth-forms-card');
   const authLogged = document.getElementById('auth-logged-in');
 
+  document.getElementById('request-login-note')?.classList.toggle('hidden', !!currentUser);
+  document.getElementById('service-request-form')?.classList.toggle('hidden', !currentUser);
   if (currentUser) {
     const name = currentProfile?.full_name || currentUser.email.split('@')[0];
     badge.innerHTML = `<svg class="ic ic-16" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> ${escapeHtml(name)}`;
@@ -394,6 +399,11 @@ async function loadInitialData() {
   mapEnabledSetting = settingsMap.map_enabled !== false && settingsMap.map_enabled !== 'false';
 
   allShops = shopRes.data || [];
+  await loadCommunityPosts();
+  const heroShops = document.getElementById('hero-shops-count');
+  const heroCats = document.getElementById('hero-categories-count');
+  if (heroShops) heroShops.textContent = allShops.length.toLocaleString('ar-IQ');
+  if (heroCats) heroCats.textContent = categories.length.toLocaleString('ar-IQ');
   reviewsSummary = {};
   (revRes.data || []).forEach(r => {
     if (!reviewsSummary[r.shop_id]) reviewsSummary[r.shop_id] = { sum: 0, count: 0 };
@@ -405,6 +415,79 @@ async function loadInitialData() {
   populateCategorySelect();
   document.getElementById('map-wrapper').classList.toggle('hidden', !mapEnabledSetting);
   renderShops();
+}
+
+async function renderServiceRequestView() {
+  const wrap = document.getElementById('my-service-requests');
+  if (!wrap || !currentUser) return;
+  wrap.classList.remove('hidden');
+  wrap.innerHTML = '<strong>طلباتي السابقة</strong><p style="color:var(--text-muted);font-size:.8rem;">جاري التحميل...</p>';
+  const { data, error } = await sb.from('service_requests').select('id,category,area,details,status,created_at').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(20);
+  if (error) { wrap.innerHTML = '<strong>طلباتك السابقة</strong><p style="color:var(--text-muted);font-size:.8rem;">نفّذ تحديث قاعدة البيانات المرفق لتفعيل سجل الطلبات.</p>'; return; }
+  const labels = {new:'جديد',reviewing:'قيد المتابعة',assigned:'تم توجيهه',completed:'مكتمل',cancelled:'ملغي'};
+  wrap.innerHTML = '<strong>طلباتي السابقة</strong>' + ((data||[]).map(r=>`<div class="review-item"><div style="display:flex;justify-content:space-between;gap:8px;"><b>${escapeHtml(r.category)}</b><span class="request-status">${labels[r.status]||'قيد المتابعة'}</span></div><div style="font-size:.76rem;color:var(--text-muted);margin-top:4px;">${escapeHtml(r.area)} • ${new Date(r.created_at).toLocaleDateString('ar-IQ')}</div><p style="font-size:.82rem;margin:5px 0 0;">${escapeHtml(r.details)}</p></div>`).join('') || '<p style="color:var(--text-muted);font-size:.82rem;">ما عندك طلبات سابقة حالياً.</p>');
+}
+
+async function submitServiceRequest() {
+  if (!currentUser) return switchView('auth');
+  const category = document.getElementById('sr-category').value;
+  const area = document.getElementById('sr-area').value.trim();
+  const phone = cleanPhone(document.getElementById('sr-phone').value);
+  const details = document.getElementById('sr-details').value.trim();
+  if (!category || !area || phone.length < 10 || details.length < 8) return showMsg('sr-message','أكمل نوع الخدمة والمنطقة ورقم الهاتف والتفاصيل بشكل صحيح.',false);
+  const btn = document.getElementById('sr-submit');
+  btn.disabled = true; btn.textContent = 'جاري إرسال الطلب...';
+  const { error } = await sb.from('service_requests').insert({user_id:currentUser.id,category,area,phone,details,status:'new'});
+  btn.disabled = false; btn.textContent = 'إرسال طلب الخدمة';
+  if (error) return showMsg('sr-message','تعذر إرسال الطلب: ' + error.message,false);
+  document.getElementById('sr-details').value = '';
+  showMsg('sr-message','وصل طلبك بنجاح. تگدر تتابع حالته من طلباتي السابقة.',true);
+  await renderServiceRequestView();
+}
+
+async function loadCommunityPosts() {
+  const { data, error } = await sb.from('community_posts').select('id,title,body,kind,area,expires_at,created_at').eq('status','published').or('expires_at.is.null,expires_at.gt.' + new Date().toISOString()).order('created_at',{ascending:false}).limit(6);
+  communityPosts = error ? [] : (data || []);
+  renderCommunityPosts();
+}
+
+function renderCommunityPosts() {
+  const section = document.getElementById('community-pulse');
+  const wrap = document.getElementById('community-posts-list');
+  if (!section || !wrap) return;
+  section.classList.toggle('hidden', communityPosts.length === 0);
+  wrap.innerHTML = communityPosts.map(post => {
+    const kind = ['news','offer','alert'].includes(post.kind) ? post.kind : 'news';
+    const symbol = kind === 'offer' ? '٪' : kind === 'alert' ? '!' : '●';
+    const label = kind === 'offer' ? 'عرض' : kind === 'alert' ? 'تنبيه' : 'خبر محلي';
+    const date = post.created_at ? new Date(post.created_at).toLocaleDateString('ar-IQ',{day:'numeric',month:'short'}) : '';
+    return `<article class="pulse-card ${kind}"><div class="pulse-symbol">${symbol}</div><div class="pulse-content"><strong>${escapeHtml(post.title)}</strong><p>${escapeHtml(post.body)}</p><div class="pulse-meta"><span>${label}</span>${post.area ? `<span>• ${escapeHtml(post.area)}</span>` : ''}${date ? `<span>• ${date}</span>` : ''}</div></div></article>`;
+  }).join('');
+}
+
+async function submitCommunityPost() {
+  if (currentProfile?.role !== 'admin') return showToast('هذه الخاصية للإدارة فقط.','err');
+  const title = document.getElementById('cp-title')?.value.trim();
+  const body = document.getElementById('cp-body')?.value.trim();
+  const kind = document.getElementById('cp-kind')?.value || 'news';
+  const area = document.getElementById('cp-area')?.value.trim() || null;
+  const days = Number(document.getElementById('cp-days')?.value || 0);
+  if (!title || !body) return showToast('اكتب العنوان والتفاصيل أولاً.','err');
+  const expires_at = days > 0 ? new Date(Date.now() + days * 86400000).toISOString() : null;
+  const { error } = await sb.from('community_posts').insert({title,body,kind,area,expires_at,status:'published',created_by:currentUser.id});
+  if (error) return showToast('تعذر النشر: ' + error.message,'err',4500);
+  showToast('تم نشر التحديث المحلي.','ok');
+  loadAdminTab('community');
+  await loadCommunityPosts();
+}
+
+async function adminDeleteCommunityPost(id) {
+  const ok = await showDialog({message:'حذف هذا التحديث من نبض اليوسفية؟',confirmText:'حذف التحديث'});
+  if (!ok) return;
+  const { error } = await sb.from('community_posts').delete().eq('id',id);
+  if (error) return showToast('تعذر الحذف: ' + error.message,'err');
+  await loadCommunityPosts();
+  loadAdminTab('community');
 }
 
 function renderCategoryPills() {
@@ -547,6 +630,23 @@ function clearRoute() {
   if (!mapEnabledSetting) document.getElementById('map-wrapper').classList.add('hidden');
 }
 
+function setResultsView(mode) {
+  const isList = mode === 'list';
+  document.body.classList.toggle('list-view', isList);
+  document.getElementById('show-map-view')?.classList.toggle('active', !isList);
+  document.getElementById('show-list-view')?.classList.toggle('active', isList);
+  if (!isList && mainMap) setTimeout(() => mainMap.invalidateSize(), 180);
+}
+
+function toggleMapFullscreen() {
+  const mapCard = document.getElementById('map-wrapper');
+  const opened = mapCard.classList.toggle('map-fullscreen');
+  document.body.classList.toggle('map-open', opened);
+  const btn = mapCard.querySelector('.map-expand-btn');
+  if (btn) btn.textContent = opened ? '✕ إغلاق' : '⛶ تكبير';
+  if (mainMap) setTimeout(() => mainMap.invalidateSize(), 220);
+}
+
 function renderShops() {
   toggleSearchClearBtn();
   const q = normalizeAr(document.getElementById('search-input').value.trim());
@@ -601,6 +701,9 @@ function renderShops() {
       });
     }
     document.getElementById('shops-count').textContent = `${mapPinsCount} على الخريطة | ${list.length} إجمالي`;
+  } else {
+    const countEl = document.getElementById('shops-count');
+    if (countEl) countEl.textContent = `${list.length} مشروع`;
   }
 
   // عرض البطاقات
@@ -1115,6 +1218,30 @@ async function loadAdminTab(tab, btnEl) {
         </div>
       `;
     }).join('');
+  } else if (tab === 'requests') {
+    const { data, error } = await sb.from('service_requests').select('*').order('created_at',{ascending:false}).limit(100);
+    if (error) { body.innerHTML = '<div class="panel-card">نفّذ ملف SQL المرفق لتفعيل طلبات الخدمات.</div>'; return; }
+    const statusLabels = {new:'جديد',reviewing:'قيد المتابعة',assigned:'تم توجيهه',completed:'مكتمل',cancelled:'ملغي'};
+    body.innerHTML = (data||[]).map(r=>`<div class="panel-card"><div style="display:flex;justify-content:space-between;gap:8px;"><strong>${escapeHtml(r.category)}</strong><span class="request-status">${statusLabels[r.status]||r.status}</span></div><p style="font-size:.82rem;color:var(--text-muted);">${escapeHtml(r.area)} • ${escapeHtml(r.phone)}</p><p style="font-size:.85rem;">${escapeHtml(r.details)}</p><small style="color:var(--text-faint);">${new Date(r.created_at).toLocaleString('ar-IQ')}</small><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;"><button class="btn btn-outline btn-sm" onclick="adminSetRequestStatus('${r.id}','reviewing')">قيد المتابعة</button><button class="btn btn-green btn-sm" onclick="adminSetRequestStatus('${r.id}','assigned')">تم التوجيه</button><button class="btn btn-primary btn-sm" onclick="adminSetRequestStatus('${r.id}','completed')">مكتمل</button><button class="btn btn-red btn-sm" onclick="adminSetRequestStatus('${r.id}','cancelled')">إلغاء</button></div></div>`).join('') || '<div class="panel-card">لا توجد طلبات خدمة حتى الآن.</div>';
+  } else if (tab === 'community') {
+    const { data, error } = await sb.from('community_posts').select('*').order('created_at',{ascending:false}).limit(50);
+    if (error) {
+      body.innerHTML = `<div class="panel-card"><strong>ميزة نبض اليوسفية تحتاج تهيئة قاعدة البيانات</strong><p style="color:var(--text-muted);font-size:.85rem;">نفّذ ملف SQL المرفق مرة واحدة في Supabase ثم أعد فتح هذا القسم.</p></div>`;
+      return;
+    }
+    body.innerHTML = `
+      <div class="panel-card">
+        <h4 style="margin:0 0 12px;">نشر تحديث محلي جديد</h4>
+        <div class="form-group"><label for="cp-title">العنوان</label><input id="cp-title" class="form-control" maxlength="100" placeholder="مثال: انقطاع الماء في حي ..." /></div>
+        <div class="form-group"><label for="cp-body">التفاصيل</label><textarea id="cp-body" class="form-control" rows="3" maxlength="1000" placeholder="اكتب التفاصيل بوضوح..."></textarea></div>
+        <div class="form-group"><label for="cp-kind">نوع التحديث</label><select id="cp-kind" class="form-control"><option value="news">خبر محلي</option><option value="alert">تنبيه مهم</option><option value="offer">عرض تجاري</option></select></div>
+        <div class="form-group"><label for="cp-area">المنطقة (اختياري)</label><input id="cp-area" class="form-control" maxlength="80" placeholder="مثال: مركز اليوسفية" /></div>
+        <div class="form-group"><label for="cp-days">مدة الظهور</label><select id="cp-days" class="form-control"><option value="1">يوم واحد</option><option value="3" selected>3 أيام</option><option value="7">أسبوع</option><option value="30">شهر</option><option value="0">بدون انتهاء تلقائي</option></select></div>
+        <button class="btn btn-primary btn-block" onclick="submitCommunityPost()">نشر التحديث</button>
+      </div>
+      <h4>التحديثات المنشورة (${(data||[]).length})</h4>
+      ${(data||[]).map(post=>`<div class="panel-card"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;"><strong>${escapeHtml(post.title)}</strong><span class="badge ${post.kind==='alert'?'badge-closed':post.kind==='offer'?'badge-open':'badge-duty'}">${post.kind==='alert'?'تنبيه':post.kind==='offer'?'عرض':'خبر'}</span></div><p style="font-size:.82rem;color:var(--text-muted);">${escapeHtml(post.body)}</p><button class="btn btn-red btn-sm" onclick="adminDeleteCommunityPost('${post.id}')">حذف</button></div>`).join('') || '<div class="panel-card">لا توجد تحديثات منشورة بعد.</div>'}
+    `;
   } else if (tab === 'settings') {
     body.innerHTML = `
       <div class="panel-card">
@@ -1126,6 +1253,12 @@ async function loadAdminTab(tab, btnEl) {
       </div>
     `;
   }
+}
+
+async function adminSetRequestStatus(id,status) {
+  const { error } = await sb.from('service_requests').update({status}).eq('id',id);
+  if (error) return showToast('تعذر تحديث الطلب: '+error.message,'err');
+  loadAdminTab('requests');
 }
 
 async function adminUpdateShop(id, changes) {
