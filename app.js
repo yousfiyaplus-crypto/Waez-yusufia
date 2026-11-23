@@ -52,7 +52,7 @@ function formatWhatsApp(num) {
 function safeImageUrl(url) {
   if (url && (url.startsWith('https://') || url.startsWith('http://'))) return url;
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="100%" height="100%" fill="#111318"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#f5b800" font-size="22" font-family="Arial">يوسفية بلس</text></svg>'
+    '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="100%" height="100%" fill="#111318"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#f5b800" font-size="22" font-family="Arial">ويز اليوسفية </text></svg>'
   );
 }
 
