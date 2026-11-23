@@ -28,6 +28,25 @@ let pickerMap = null;
 let pickerMarker = null;
 let pendingCompressedBlob = null;
 
+// ===== مكتبة الأيقونات (SVG مضمّنة، بلا طلبات خارجية) =====
+const ICONS = {
+  pin: '<svg class="ic ic-14" viewBox="0 0 24 24"><path d="M12 22s7-7.58 7-12.5A7 7 0 0 0 5 9.5C5 14.42 12 22 12 22z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
+  check: '<svg class="ic ic-14" viewBox="0 0 24 24" stroke-width="2.3"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>',
+  star: (filled) => `<svg class="ic ic-14${filled ? ' ic-fill' : ''}" viewBox="0 0 24 24" ${filled ? 'fill="currentColor" stroke="none"' : ''}><path d="M12 2.5l2.95 6.26 6.9.76-5.13 4.73 1.4 6.78L12 17.9 5.88 21.03l1.4-6.78L2.15 9.52l6.9-.76L12 2.5z"/></svg>`,
+  fire: '<svg class="ic ic-14" viewBox="0 0 24 24"><path d="M12 22c4 0 7-2.5 7-6.5 0-3-1.8-4.8-2.6-6.3-.3 1.7-1.3 2.8-1.3 2.8C15.5 9 14 6 12 2c-.6 3-2 4.8-3.3 6.5C7.4 10 6 11.8 6 14.5 6 18.5 8 22 12 22z"/></svg>',
+  phone: '<svg class="ic ic-16" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>',
+  chat: '<svg class="ic ic-16" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-4-1L3 20l1-4.5a8.38 8.38 0 0 1-1-4A8.5 8.5 0 1 1 21 11.5z"/></svg>',
+  compass: '<svg class="ic ic-16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M14.5 9.5l-2 5-5 2 2-5 5-2z"/></svg>',
+  heart: (filled) => `<svg class="ic ic-16${filled ? ' ic-fill' : ''}" viewBox="0 0 24 24" ${filled ? 'fill="currentColor"' : ''}><path d="M12 21s-7.2-4.5-9.6-9C1.1 9 2.5 5.5 5.9 5.5c2 0 3.3 1.1 4 2.2.7-1.1 2-2.2 4-2.2 3.4 0 4.8 3.5 3.5 6.5-2.4 4.5-9.6 9-9.6 9z"/></svg>`,
+  eye: '<svg class="ic ic-14" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>',
+  tap: '<svg class="ic ic-14" viewBox="0 0 24 24"><path d="M9 11.5V6a1.5 1.5 0 0 1 3 0v5"/><path d="M12 11V5a1.5 1.5 0 0 1 3 0v6"/><path d="M15 11.5V7a1.5 1.5 0 0 1 3 0v7c0 3.5-2 6.5-6 6.5s-5.5-1.5-7-4l-1.8-3.2a1.4 1.4 0 0 1 2.3-1.6L7 14"/></svg>',
+  edit: '<svg class="ic ic-14" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>',
+  trash: '<svg class="ic ic-14" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>',
+  flag: '<svg class="ic ic-14" viewBox="0 0 24 24"><path d="M5 3v18"/><path d="M5 4h11l-2 4 2 4H5"/></svg>',
+  store: '<svg class="ic ic-14" viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0"/><path d="M5 9v10h14V9"/><path d="M9 19v-5h6v5"/></svg>',
+  clock: '<svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+};
+
 // ===== أدوات مساعدة آمنة =====
 function escapeHtml(str) {
   if (!str) return '';
@@ -53,7 +72,7 @@ function formatWhatsApp(num) {
 function safeImageUrl(url) {
   if (url && (url.startsWith('https://') || url.startsWith('http://'))) return url;
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="100%" height="100%" fill="#111318"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#f5b800" font-size="22" font-family="Arial">ويز اليوسفية </text></svg>'
+    '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="100%" height="100%" fill="#0d0f14"/><path d="M60 95l8-25h64l8 25" stroke="#f5b800" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M68 120v40h64v-40" stroke="#f5b800" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M88 160v-22h24v22" stroke="#f5b800" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>'
   );
 }
 
@@ -190,14 +209,14 @@ function updateAuthUI() {
 
   if (currentUser) {
     const name = currentProfile?.full_name || currentUser.email.split('@')[0];
-    badge.textContent = `👤 ${name}`;
+    badge.innerHTML = `<svg class="ic ic-16" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> ${escapeHtml(name)}`;
     authForms.classList.add('hidden');
     authLogged.classList.remove('hidden');
     document.getElementById('profile-info').innerHTML =
-      `<strong>الاسم:</strong> ${escapeHtml(name)}<br><strong>الإيميل:</strong> ${escapeHtml(currentUser.email)}<br><strong>الصلاحية:</strong> ${currentProfile?.role === 'admin' ? '🛡️ مدير المنصة' : 'مستخدم / صاحب مشروع'}`;
+      `<strong>الاسم:</strong> ${escapeHtml(name)}<br><strong>الإيميل:</strong> ${escapeHtml(currentUser.email)}<br><strong>الصلاحية:</strong> ${currentProfile?.role === 'admin' ? 'مدير المنصة' : 'مستخدم / صاحب مشروع'}`;
     navAdmin.classList.toggle('hidden', currentProfile?.role !== 'admin');
   } else {
-    badge.textContent = 'دخول / تسجيل';
+    badge.innerHTML = `<svg class="ic ic-16" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> دخول / تسجيل`;
     authForms.classList.remove('hidden');
     authLogged.classList.add('hidden');
     navAdmin.classList.add('hidden');
@@ -283,7 +302,7 @@ async function loadInitialData() {
 
 function renderCategoryPills() {
   const wrap = document.getElementById('category-pills');
-  let html = `<button class="pill ${selectedCategory === 'all' ? 'active' : ''}" onclick="selectCategory('all')">✨ الكل</button>`;
+  let html = `<button class="pill ${selectedCategory === 'all' ? 'active' : ''}" onclick="selectCategory('all')">الكل</button>`;
   categories.forEach(c => {
     html += `<button class="pill ${selectedCategory === c.id ? 'active' : ''}" onclick="selectCategory(${c.id})">${escapeHtml(c.icon)} ${escapeHtml(c.name)}</button>`;
   });
@@ -322,7 +341,7 @@ function requestUserLocation() {
     (pos) => {
       userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       document.getElementById('btn-my-location').classList.add('active');
-      statusEl.textContent = '✅ تم تحديد موقعك — يتم الآن ترتيب المشاريع الظاهرة من الأقرب إليك.';
+      statusEl.innerHTML = `${ICONS.check} تم تحديد موقعك — يتم الآن ترتيب المشاريع الظاهرة من الأقرب إليك.`;
       if (mainMap) mainMap.setView([userCoords.lat, userCoords.lng], 14);
       renderShops();
     },
@@ -365,10 +384,10 @@ async function showRouteInApp(shopId) {
     routeText.textContent = `جاري رسم المسار إلى ${shop.name}...`;
 
     L.circleMarker([coords.lat, coords.lng], {
-      radius: 8, color: '#111318', fillColor: '#16a34a', fillOpacity: 1
-    }).bindPopup('📍 موقعك الحالي').addTo(routeLayer);
+      radius: 8, color: '#0d0f14', fillColor: '#16a34a', fillOpacity: 1
+    }).bindPopup('موقعك الحالي').addTo(routeLayer);
 
-    L.marker([shop.lat, shop.lng]).bindPopup(`🏪 ${escapeHtml(shop.name)}`).addTo(routeLayer);
+    L.marker([shop.lat, shop.lng]).bindPopup(escapeHtml(shop.name)).addTo(routeLayer);
 
     try {
       const url = `https://router.project-osrm.org/route/v1/driving/${coords.lng},${coords.lat};${shop.lng},${shop.lat}?overview=full&geometries=geojson`;
@@ -380,7 +399,7 @@ async function showRouteInApp(shopId) {
         mainMap.fitBounds(line.getBounds(), { padding: [35, 35] });
         const km = (r.distance / 1000).toFixed(1);
         const mins = Math.max(1, Math.round(r.duration / 60));
-        routeText.textContent = `🚗 إلى ${shop.name}: ${km} كم (~${mins} دقيقة)`;
+        routeText.textContent = `إلى ${shop.name}: ${km} كم (~${mins} دقيقة)`;
         return;
       }
     } catch (_) {}
@@ -390,7 +409,7 @@ async function showRouteInApp(shopId) {
     }).addTo(routeLayer);
     mainMap.fitBounds(fallbackLine.getBounds(), { padding: [35, 35] });
     const d = calcDistanceKm(coords.lat, coords.lng, shop.lat, shop.lng);
-    routeText.textContent = `📍 إلى ${shop.name} (يبعد ${formatDistance(d)})`;
+    routeText.textContent = `إلى ${shop.name} (يبعد ${formatDistance(d)})`;
   };
 
   if (userCoords) {
@@ -409,7 +428,7 @@ async function showRouteInApp(shopId) {
       () => {
         if (routeLayer) routeLayer.clearLayers();
         mainMap.setView([shop.lat, shop.lng], 16);
-        routeText.textContent = `📍 موقع ${shop.name} (فعّل الـ GPS لرسم الطريق من مكانك)`;
+        routeText.textContent = `موقع ${shop.name} (فعّل الـ GPS لرسم الطريق من مكانك)`;
       }
     );
   }
@@ -461,7 +480,7 @@ function renderShops() {
     if (userCoords) {
       L.circleMarker([userCoords.lat, userCoords.lng], {
         radius: 8, color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.9
-      }).bindPopup('📍 موقعك الحالي').addTo(mainMarkersLayer);
+      }).bindPopup('موقعك الحالي').addTo(mainMarkersLayer);
     }
     let mapPinsCount = 0;
     if (mapEnabledSetting) {
@@ -484,7 +503,7 @@ function renderShops() {
   }
 
   container.innerHTML = list.map(s => {
-    const cat = catMap[s.category_id] || { icon: '📍', name: '' };
+    const cat = catMap[s.category_id] || { icon: '', name: '' };
     const showDir = mapEnabledSetting && s.show_on_map && s.lat && s.lng;
     const waNum = formatWhatsApp(s.whatsapp || s.phone);
 
@@ -495,25 +514,25 @@ function renderShops() {
           <div class="shop-info">
             <div class="shop-title-row">
               <h3 class="shop-name">${escapeHtml(s.name)}</h3>
-              ${s.is_verified ? '<span class="badge badge-verified">✓ معتمد</span>' : ''}
-              ${s.plan === 'gold' ? '<span class="badge badge-gold">⭐ مميز</span>' : ''}
+              ${s.is_verified ? `<span class="badge badge-verified">${ICONS.check} معتمد</span>` : ''}
+              ${s.plan === 'gold' ? `<span class="badge badge-gold">${ICONS.star(true)} مميز</span>` : ''}
             </div>
             <div class="shop-meta">
-              ${escapeHtml(cat.icon)} ${escapeHtml(cat.name)} • 📍 ${escapeHtml(s.area_text)}
-              ${s.dist != null ? ` • <b>يبعد ${formatDistance(s.dist)}</b>` : ''}
+              ${escapeHtml(cat.icon)} ${escapeHtml(cat.name)} <span class="sep">•</span> ${ICONS.pin} ${escapeHtml(s.area_text)}
+              ${s.dist != null ? ` <span class="sep">•</span> <b>يبعد ${formatDistance(s.dist)}</b>` : ''}
               ${!s.show_on_map ? ' (موقع خاص/متنقل)' : ''}
             </div>
-            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:4px;">
-              <span class="badge ${s.openInfo.cls}">● ${escapeHtml(s.openInfo.label)}</span>
-              ${s.revCount > 0 ? `<span style="font-size:0.78rem;font-weight:700;">⭐ ${s.avgRating.toFixed(1)} (${s.revCount})</span>` : '<span style="font-size:0.76rem;color:var(--text-muted);">لا تقييمات بعد</span>'}
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:4px;">
+              <span class="badge ${s.openInfo.cls}"><span class="dot"></span> ${escapeHtml(s.openInfo.label)}</span>
+              ${s.revCount > 0 ? `<span class="shop-rating">${ICONS.star(true)} ${s.avgRating.toFixed(1)} (${s.revCount})</span>` : '<span class="no-rating">لا تقييمات بعد</span>'}
             </div>
-            ${s.daily_offer ? `<div class="shop-offer">🔥 ${escapeHtml(s.daily_offer)}</div>` : ''}
+            ${s.daily_offer ? `<div class="shop-offer">${ICONS.fire} ${escapeHtml(s.daily_offer)}</div>` : ''}
           </div>
         </div>
         <div class="shop-actions ${showDir ? '' : 'two-cols'}">
-          <a class="action-btn action-call" href="tel:${cleanPhone(s.phone)}" onclick="trackMetric('${s.id}','click')">📞 اتصال</a>
-          <a class="action-btn action-wa" target="_blank" rel="noopener" href="https://wa.me/${waNum}" onclick="trackMetric('${s.id}','click')">💬 واتساب</a>
-          ${showDir ? `<button type="button" class="action-btn action-map" onclick="showRouteInApp('${s.id}')">📍 المسار</button>` : ''}
+          <a class="action-btn action-call" href="tel:${cleanPhone(s.phone)}" onclick="trackMetric('${s.id}','click')">${ICONS.phone} اتصال</a>
+          <a class="action-btn action-wa" target="_blank" rel="noopener" href="https://wa.me/${waNum}" onclick="trackMetric('${s.id}','click')">${ICONS.chat} واتساب</a>
+          ${showDir ? `<button type="button" class="action-btn action-map" onclick="showRouteInApp('${s.id}')">${ICONS.pin} المسار</button>` : ''}
         </div>
       </article>
     `;
@@ -560,25 +579,25 @@ async function openShopModal(shopId) {
     <img src="${safeImageUrl(shop.image_url)}" style="width:100%;max-height:220px;object-fit:cover;border-radius:14px;margin-bottom:10px;" />
     <div class="shop-title-row">
       <h2 style="margin:0;">${escapeHtml(shop.name)}</h2>
-      ${shop.is_verified ? '<span class="badge badge-verified">✓ معتمد</span>' : ''}
-      ${shop.plan === 'gold' ? '<span class="badge badge-gold">⭐ مميز</span>' : ''}
+      ${shop.is_verified ? `<span class="badge badge-verified">${ICONS.check} معتمد</span>` : ''}
+      ${shop.plan === 'gold' ? `<span class="badge badge-gold">${ICONS.star(true)} مميز</span>` : ''}
     </div>
-    <p style="margin:6px 0;font-size:0.88rem;color:var(--text-muted);">
-      📍 ${escapeHtml(shop.area_text)} • <span class="badge ${openInfo.cls}">${escapeHtml(openInfo.label)}</span>
-      • الدوام: ${shop.is_24h ? '٢٤ ساعة' : `${escapeHtml(shop.open_time?.slice(0,5) || '')} - ${escapeHtml(shop.close_time?.slice(0,5) || '')}`}
+    <p style="margin:6px 0;font-size:0.88rem;color:var(--text-muted);display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+      ${ICONS.pin} ${escapeHtml(shop.area_text)} <span class="sep">•</span> <span class="badge ${openInfo.cls}">${escapeHtml(openInfo.label)}</span>
+      <span class="sep">•</span> الدوام: ${shop.is_24h ? '٢٤ ساعة' : `${escapeHtml(shop.open_time?.slice(0,5) || '')} - ${escapeHtml(shop.close_time?.slice(0,5) || '')}`}
     </p>
-    ${shop.daily_offer ? `<div class="shop-offer" style="margin-bottom:8px;">🔥 ${escapeHtml(shop.daily_offer)}</div>` : ''}
+    ${shop.daily_offer ? `<div class="shop-offer" style="margin-bottom:8px;">${ICONS.fire} ${escapeHtml(shop.daily_offer)}</div>` : ''}
     <p style="font-size:0.93rem;line-height:1.6;">${escapeHtml(shop.description || 'لا يوجد وصف إضافي.')}</p>
 
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;">
-      <a class="btn btn-green btn-sm" href="tel:${cleanPhone(shop.phone)}" onclick="trackMetric('${shop.id}','click')">📞 اتصال مباشر</a>
-      <a class="btn btn-primary btn-sm" target="_blank" rel="noopener" href="https://wa.me/${waNum}" onclick="trackMetric('${shop.id}','click')">💬 واتساب</a>
-      ${showDir ? `<button type="button" class="btn btn-outline btn-sm" onclick="showRouteInApp('${shop.id}')">📍 المسار</button>` : ''}
-      <button class="btn btn-outline btn-sm" onclick="toggleFav('${shop.id}')">${isFav ? '❤️ محفوظ بالمفضلة' : '🤍 حفظ بالمفضلة'}</button>
+      <a class="btn btn-green btn-sm" href="tel:${cleanPhone(shop.phone)}" onclick="trackMetric('${shop.id}','click')">${ICONS.phone} اتصال مباشر</a>
+      <a class="btn btn-primary btn-sm" target="_blank" rel="noopener" href="https://wa.me/${waNum}" onclick="trackMetric('${shop.id}','click')">${ICONS.chat} واتساب</a>
+      ${showDir ? `<button type="button" class="btn btn-outline btn-sm" onclick="showRouteInApp('${shop.id}')">${ICONS.pin} المسار</button>` : ''}
+      <button class="btn btn-outline btn-sm" onclick="toggleFav('${shop.id}')" style="${isFav ? 'color:var(--brand-red);' : ''}">${ICONS.heart(isFav)} ${isFav ? 'محفوظ بالمفضلة' : 'حفظ بالمفضلة'}</button>
     </div>
 
     <hr style="border:none;border-top:1px solid var(--border);margin:14px 0;" />
-    <h4 style="margin:0 0 8px;">⭐ تقييمات الزبائن (${approvedRevs.length})</h4>
+    <h4 style="margin:0 0 8px;display:flex;align-items:center;gap:6px;">${ICONS.star(true)} تقييمات الزبائن (${approvedRevs.length})</h4>
 
     ${!currentUser ? `
       <div class="panel-card" style="background:#f9fafb;padding:10px;">
@@ -592,7 +611,7 @@ async function openShopModal(shopId) {
       <div class="panel-card" style="background:#f9fafb;padding:12px;">
         <div style="font-weight:700;font-size:0.86rem;">أضف تقييمك الحقيقي (مرة واحدة فقط):</div>
         <div class="star-select" id="rev-stars">
-          ${[1,2,3,4,5].map(n => `<button type="button" class="star-btn active" onclick="setReviewStars(${n})">⭐</button>`).join('')}
+          ${[1,2,3,4,5].map(n => `<button type="button" class="star-btn active" onclick="setReviewStars(${n})">${ICONS.star(true).replace('ic-14','ic-22')}</button>`).join('')}
         </div>
         <input type="hidden" id="rev-rating-val" value="5" />
         <textarea id="rev-comment" class="form-control" rows="2" placeholder="اكتب تجربتك بكل أمانة..."></textarea>
@@ -606,10 +625,10 @@ async function openShopModal(shopId) {
         <div class="review-item">
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <strong>${escapeHtml(r.reviewer_name)}</strong>
-            <span>${'⭐'.repeat(r.rating)}</span>
+            <span style="color:var(--brand-gold);display:flex;gap:1px;">${ICONS.star(true).repeat(r.rating)}</span>
           </div>
           <p style="margin:4px 0;font-size:0.88rem;">${escapeHtml(r.comment || '')}</p>
-          ${isOwner && !r.is_reported ? `<button class="btn btn-outline btn-sm" onclick="reportFakeReview('${r.id}','${shop.id}')">🚩 إبلاغ الإدارة عن تقييم مزيف</button>` : ''}
+          ${isOwner && !r.is_reported ? `<button class="btn btn-outline btn-sm" onclick="reportFakeReview('${r.id}','${shop.id}')">${ICONS.flag} إبلاغ الإدارة عن تقييم مزيف</button>` : ''}
           ${r.is_reported ? '<small style="color:var(--brand-red);">تم إرسال بلاغ للإدارة لفحص هذا التقييم</small>' : ''}
         </div>
       `).join('')}
@@ -682,16 +701,19 @@ async function renderOwnerSection() {
           <span class="badge ${s.status === 'approved' ? 'badge-open' : s.status === 'pending' ? 'badge-pending' : 'badge-closed'}">
             ${s.status === 'approved' ? 'منشور' : s.status === 'pending' ? 'بانتظار موافقة الإدارة' : 'مرفوض'}
           </span>
-          ${s.is_verified ? '<span class="badge badge-verified">✓ معتمد</span>' : ''}
+          ${s.is_verified ? `<span class="badge badge-verified">${ICONS.check} معتمد</span>` : ''}
         </div>
-        <div style="font-size:0.8rem;color:var(--text-muted);">👁️ ${s.views_count} زيارة • 👆 ${s.clicks_count} تواصل</div>
+        <div style="font-size:0.8rem;color:var(--text-muted);display:flex;align-items:center;gap:10px;">
+          <span style="display:flex;align-items:center;gap:4px;">${ICONS.eye} ${s.views_count} زيارة</span>
+          <span style="display:flex;align-items:center;gap:4px;">${ICONS.tap} ${s.clicks_count} تواصل</span>
+        </div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
-        <button class="btn btn-outline btn-sm" onclick='openOwnerForm(${JSON.stringify(s).replace(/'/g, "&#39;")})'>✏️ تعديل الملف</button>
-        <button class="btn btn-green btn-sm" onclick="quickManualStatus('${s.id}','open')">🟢 مفتوح</button>
-        <button class="btn btn-gold btn-sm" onclick="quickManualStatus('${s.id}','duty')">🟡 خفارة</button>
-        <button class="btn btn-red btn-sm" onclick="quickManualStatus('${s.id}','closed')">🔴 مغلق</button>
-        <button class="btn btn-outline btn-sm" onclick="quickManualStatus('${s.id}','auto')">⏱️ تلقائي</button>
+        <button class="btn btn-outline btn-sm" onclick='openOwnerForm(${JSON.stringify(s).replace(/'/g, "&#39;")})'>${ICONS.edit} تعديل الملف</button>
+        <button class="btn btn-green btn-sm" onclick="quickManualStatus('${s.id}','open')"><span class="dot"></span> مفتوح</button>
+        <button class="btn btn-gold btn-sm" onclick="quickManualStatus('${s.id}','duty')"><span class="dot"></span> خفارة</button>
+        <button class="btn btn-red btn-sm" onclick="quickManualStatus('${s.id}','closed')"><span class="dot"></span> مغلق</button>
+        <button class="btn btn-outline btn-sm" onclick="quickManualStatus('${s.id}','auto')">${ICONS.clock} تلقائي</button>
       </div>
     </div>
   `).join('');
@@ -724,7 +746,7 @@ function openOwnerForm(shop = null) {
   document.getElementById('f-show-map').checked = shop ? !!shop.show_on_map : true;
   document.getElementById('f-lat').value = shop?.lat || '';
   document.getElementById('f-lng').value = shop?.lng || '';
-  document.getElementById('coords-label').textContent = shop?.lat ? `✅ تم تحديد الإحداثيات` : 'المس الخريطة لتثبيت الدبوس';
+  document.getElementById('coords-label').innerHTML = shop?.lat ? `${ICONS.check} تم تحديد الإحداثيات` : 'المس الخريطة لتثبيت الدبوس';
 
   const prev = document.getElementById('f-image-preview');
   if (shop?.image_url) {
@@ -765,7 +787,7 @@ function initPickerMap(lat, lng) {
 function setPickerPin(lat, lng) {
   document.getElementById('f-lat').value = lat.toFixed(6);
   document.getElementById('f-lng').value = lng.toFixed(6);
-  document.getElementById('coords-label').textContent = `✅ تم تثبيت الموقع (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+  document.getElementById('coords-label').innerHTML = `${ICONS.check} تم تثبيت الموقع (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
   if (pickerMarker) pickerMarker.setLatLng([lat, lng]);
   else pickerMarker = L.marker([lat, lng]).addTo(pickerMap);
 }
@@ -830,8 +852,10 @@ async function saveShop() {
   if (show_on_map && (!lat || !lng)) return showMsg('owner-form-msg', 'حدد موقعك على الخريطة أو اختر إخفاء الموقع للعمل المنزلي/المتنقل.', false);
 
   const btn = document.getElementById('btn-save-shop');
+  const btnDefaultHtml = btn.innerHTML;
+  const btnSavingHtml = `${ICONS.clock} جاري الحفظ...`;
   btn.disabled = true;
-  btn.textContent = 'جاري الحفظ...';
+  btn.innerHTML = btnSavingHtml;
 
   let image_url = undefined;
   if (pendingCompressedBlob) {
@@ -840,7 +864,7 @@ async function saveShop() {
       contentType: 'image/jpeg'
     });
     if (upErr) {
-      btn.disabled = false; btn.textContent = '💾 حفظ وإرسال للمراجعة';
+      btn.disabled = false; btn.innerHTML = btnDefaultHtml;
       return showMsg('owner-form-msg', 'فشل رفع الصورة: ' + upErr.message, false);
     }
     image_url = sb.storage.from('shop-images').getPublicUrl(filePath).data.publicUrl;
@@ -861,7 +885,7 @@ async function saveShop() {
   }
 
   btn.disabled = false;
-  btn.textContent = '💾 حفظ وإرسال للمراجعة';
+  btn.innerHTML = btnDefaultHtml;
   if (res.error) return showMsg('owner-form-msg', 'حدث خطأ: ' + res.error.message, false);
 
   showMsg('owner-form-msg', editId ? 'تم تحديث بيانات المشروع بنجاح!' : 'تم إرسال مشروعك! سيظهر على الخريطة بعد موافقة الإدارة.', true);
@@ -888,13 +912,19 @@ async function loadAdminTab(tab, btnEl) {
           <img src="${safeImageUrl(s.image_url)}" style="width:70px;height:70px;border-radius:10px;object-fit:cover;" />
           <div>
             <strong>${escapeHtml(s.name)}</strong><br>
-            <small>📞 ${escapeHtml(s.phone)} • 📍 ${escapeHtml(s.area_text)} • ${s.show_on_map ? '🗺️ ظاهر على الخريطة' : '🔒 موقع مخفي'}</small>
+            <small style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:3px;">
+              <span style="display:flex;align-items:center;gap:3px;">${ICONS.phone} ${escapeHtml(s.phone)}</span>
+              <span class="sep">•</span>
+              <span style="display:flex;align-items:center;gap:3px;">${ICONS.pin} ${escapeHtml(s.area_text)}</span>
+              <span class="sep">•</span>
+              ${s.show_on_map ? 'ظاهر على الخريطة' : 'موقع مخفي'}
+            </small>
             <p style="margin:4px 0;font-size:0.83rem;">${escapeHtml(s.description || '')}</p>
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:10px;">
-          <button class="btn btn-green btn-sm" onclick="adminUpdateShop('${s.id}', {status:'approved'})">✅ موافقة ونشر</button>
-          <button class="btn btn-red btn-sm" onclick="adminUpdateShop('${s.id}', {status:'rejected'})">❌ رفض</button>
+          <button class="btn btn-green btn-sm" onclick="adminUpdateShop('${s.id}', {status:'approved'})">${ICONS.check} موافقة ونشر</button>
+          <button class="btn btn-red btn-sm" onclick="adminUpdateShop('${s.id}', {status:'rejected'})">رفض</button>
         </div>
       </div>
     `).join('');
@@ -904,13 +934,17 @@ async function loadAdminTab(tab, btnEl) {
       <div class="panel-card">
         <strong>${escapeHtml(s.name)}</strong>
         <span class="badge ${s.status==='approved'?'badge-open':'badge-closed'}">${escapeHtml(s.status)}</span>
-        ${s.is_verified ? '<span class="badge badge-verified">✓ معتمد</span>' : ''}
-        ${s.plan === 'gold' ? '<span class="badge badge-gold">⭐ ذهبي</span>' : ''}
-        <div style="font-size:0.8rem;color:var(--text-muted);margin:4px 0;">👁️ ${s.views_count} | 👆 ${s.clicks_count} | 📞 ${escapeHtml(s.phone)}</div>
+        ${s.is_verified ? `<span class="badge badge-verified">${ICONS.check} معتمد</span>` : ''}
+        ${s.plan === 'gold' ? `<span class="badge badge-gold">${ICONS.star(true)} ذهبي</span>` : ''}
+        <div style="font-size:0.8rem;color:var(--text-muted);margin:5px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="display:flex;align-items:center;gap:3px;">${ICONS.eye} ${s.views_count}</span>
+          <span style="display:flex;align-items:center;gap:3px;">${ICONS.tap} ${s.clicks_count}</span>
+          <span style="display:flex;align-items:center;gap:3px;">${ICONS.phone} ${escapeHtml(s.phone)}</span>
+        </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
-          <button class="btn btn-outline btn-sm" onclick="adminUpdateShop('${s.id}', {is_verified: ${!s.is_verified}})">${s.is_verified ? 'إلغاء الاعتماد' : '✓ منح علامة معتمد'}</button>
-          <button class="btn btn-gold btn-sm" onclick="adminUpdateShop('${s.id}', {plan: '${s.plan === 'gold' ? 'free' : 'gold'}'})">${s.plan === 'gold' ? 'إرجاع للمجاني' : '⭐ ترقية لباقة ذهبية'}</button>
-          <button class="btn btn-red btn-sm" onclick="adminDeleteShop('${s.id}')">🗑️ حذف</button>
+          <button class="btn btn-outline btn-sm" onclick="adminUpdateShop('${s.id}', {is_verified: ${!s.is_verified}})">${ICONS.check} ${s.is_verified ? 'إلغاء الاعتماد' : 'منح علامة معتمد'}</button>
+          <button class="btn btn-gold btn-sm" onclick="adminUpdateShop('${s.id}', {plan: '${s.plan === 'gold' ? 'free' : 'gold'}'})">${ICONS.star(true)} ${s.plan === 'gold' ? 'إرجاع للمجاني' : 'ترقية لباقة ذهبية'}</button>
+          <button class="btn btn-red btn-sm" onclick="adminDeleteShop('${s.id}')">${ICONS.trash} حذف</button>
         </div>
       </div>
     `).join('');
@@ -932,16 +966,16 @@ async function loadAdminTab(tab, btnEl) {
         <div class="panel-card">
           <div style="display:flex;justify-content:space-between;">
             <strong>${escapeHtml(shopMap[r.shop_id] || 'مشروع')}</strong>
-            <span>${'⭐'.repeat(r.rating)}</span>
+            <span style="color:var(--brand-gold);display:flex;gap:1px;">${ICONS.star(true).repeat(r.rating)}</span>
           </div>
           <div style="font-size:0.8rem;color:var(--text-muted);margin:4px 0;">
             المقيّم: ${escapeHtml(r.reviewer_name)} | الإيميل: <b>${escapeHtml(p.email || '')}</b> | تاريخ فتح الحساب: <b>${escapeHtml(accDate)}</b>
           </div>
           <p style="margin:6px 0;font-size:0.9rem;">${escapeHtml(r.comment || '')}</p>
-          ${r.is_reported ? `<div class="msg-box msg-err">🚩 بلاغ من صاحب المشروع: ${escapeHtml(r.report_reason || '')}</div>` : ''}
+          ${r.is_reported ? `<div class="msg-box msg-err">${ICONS.flag} بلاغ من صاحب المشروع: ${escapeHtml(r.report_reason || '')}</div>` : ''}
           <div style="display:flex;gap:6px;margin-top:8px;">
-            ${r.status !== 'approved' ? `<button class="btn btn-green btn-sm" onclick="adminUpdateReview('${r.id}','approved')">✅ اعتماد</button>` : ''}
-            <button class="btn btn-red btn-sm" onclick="adminDeleteReview('${r.id}')">🗑️ رفض وحذف</button>
+            ${r.status !== 'approved' ? `<button class="btn btn-green btn-sm" onclick="adminUpdateReview('${r.id}','approved')">${ICONS.check} اعتماد</button>` : ''}
+            <button class="btn btn-red btn-sm" onclick="adminDeleteReview('${r.id}')">${ICONS.trash} رفض وحذف</button>
           </div>
         </div>
       `;
@@ -952,7 +986,7 @@ async function loadAdminTab(tab, btnEl) {
         <h4 style="margin-top:0;">التحكم العام بالخريطة</h4>
         <p style="font-size:0.86rem;color:var(--text-muted);">إذا احتجت لأي سبب إخفاء الخريطة التفاعلية من الموقع بالكامل وتحويله لقائمة بطاقات فقط:</p>
         <button class="btn ${mapEnabledSetting ? 'btn-red' : 'btn-green'}" onclick="toggleGlobalMap()">
-          ${mapEnabledSetting ? '🔒 إخفاء الخريطة من الموقع كله' : '🗺️ تفعيل وإظهار الخريطة بالموقع'}
+          ${mapEnabledSetting ? 'إخفاء الخريطة من الموقع كله' : `${ICONS.pin} تفعيل وإظهار الخريطة بالموقع`}
         </button>
       </div>
     `;

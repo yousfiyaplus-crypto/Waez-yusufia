@@ -4,216 +4,284 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ويز اليوسفية | دليل وخريطة المنطقة</title>
-  <meta name="theme-color" content="#111318" />
+  <meta name="theme-color" content="#0d0f14" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="ويز اليوسفية" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="./logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     :root {
-      --brand-dark: #111318;
-      --brand-card: #ffffff;
+      --brand-dark: #0d0f14;
+      --brand-dark-2: #171a22;
       --brand-gold: #f5b800;
+      --brand-gold-dim: #d9a400;
       --brand-red: #e11d48;
       --brand-green: #16a34a;
-      --bg-page: #f3f4f6;
-      --text-main: #111827;
-      --text-muted: #6b7280;
-      --border: #e5e7eb;
+      --brand-blue: #2563eb;
+      --bg-page: #f4f5f7;
+      --card: #ffffff;
+      --text-main: #13151a;
+      --text-muted: #70778a;
+      --text-faint: #9aa1b2;
+      --border: #e7e9ee;
+      --border-strong: #d8dbe3;
+      --radius-xl: 20px;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 9px;
+      --shadow-sm: 0 1px 2px rgba(17,19,24,0.04), 0 1px 1px rgba(17,19,24,0.03);
+      --shadow-md: 0 6px 16px rgba(17,19,24,0.08), 0 2px 6px rgba(17,19,24,0.04);
+      --shadow-lg: 0 18px 40px rgba(17,19,24,0.16), 0 6px 14px rgba(17,19,24,0.06);
+      --shadow-gold: 0 8px 24px rgba(245,184,0,0.22);
     }
     * { box-sizing: border-box; font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparent; }
     html, body { touch-action: pan-y; overscroll-behavior-y: contain; }
-    body { margin: 0; background: var(--bg-page); color: var(--text-main); padding-bottom: 84px; }
+    body {
+      margin: 0; background: var(--bg-page); color: var(--text-main); padding-bottom: 92px;
+      -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+    }
     button, a, .pill, .shop-card { touch-action: manipulation; }
+    button { font-family: inherit; }
     .search-box input, .form-control { font-size: 16px !important; }
     .hidden { display: none !important; }
+    ::selection { background: rgba(245,184,0,0.35); }
+
+    /* أيقونات SVG */
+    .ic { display: inline-block; vertical-align: middle; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .ic-14 { width: 14px; height: 14px; }
+    .ic-16 { width: 16px; height: 16px; }
+    .ic-18 { width: 18px; height: 18px; }
+    .ic-20 { width: 20px; height: 20px; }
+    .ic-22 { width: 22px; height: 22px; }
+    .ic-fill { fill: currentColor; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; background: currentColor; flex-shrink: 0; }
 
     /* الهيدر */
     header {
-      background: var(--brand-dark);
+      background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-dark-2) 100%);
       color: #fff;
-      padding: 12px 16px;
+      padding: 13px 16px;
       position: sticky;
       top: 0;
       z-index: 900;
-      border-bottom: 3px solid var(--brand-gold);
+      box-shadow: 0 1px 0 rgba(245,184,0,0.5), var(--shadow-md);
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
     }
-    .brand { display: flex; align-items: center; gap: 10px; }
-    .brand img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--brand-gold); object-fit: cover; background: #222; }
-    .brand-title { font-weight: 800; font-size: 1.05rem; line-height: 1.2; }
+    .brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+    .brand img { width: 42px; height: 42px; border-radius: 50%; border: 2px solid var(--brand-gold); object-fit: cover; background: #1c1f28; }
+    .brand-title { font-weight: 800; font-size: 1.08rem; line-height: 1.2; letter-spacing: -0.2px; }
     .brand-title span { color: var(--brand-gold); }
-    .brand-sub { font-size: 0.72rem; color: #cbd5e1; }
-    .header-actions { display: flex; align-items: center; gap: 6px; }
+    .brand-sub { font-size: 0.72rem; color: #9aa3b5; margin-top: 2px; }
+    .header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
     .badge-user {
-      background: rgba(245, 184, 0, 0.15);
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(245, 184, 0, 0.14);
       color: var(--brand-gold);
-      border: 1px solid rgba(245, 184, 0, 0.4);
-      padding: 4px 10px;
+      border: 1px solid rgba(245, 184, 0, 0.35);
+      padding: 7px 13px;
       border-radius: 99px;
-      font-size: 0.75rem;
+      font-size: 0.78rem;
       font-weight: 700;
       cursor: pointer;
+      transition: background .15s, transform .1s;
+      white-space: nowrap;
     }
+    .badge-user:active { transform: scale(0.96); }
+    .badge-user:hover { background: rgba(245, 184, 0, 0.22); }
 
     /* الحاوية العامة */
-    .container { max-width: 760px; margin: 0 auto; padding: 12px; }
+    .container { max-width: 760px; margin: 0 auto; padding: 14px 12px; }
 
     /* البحث والفلاتر */
     .search-box {
-      background: #fff;
-      border: 2px solid var(--border);
-      border-radius: 14px;
-      padding: 4px 12px;
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 2px 14px;
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
+      gap: 10px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-sm);
+      color: var(--text-faint);
+      transition: border-color .15s, box-shadow .15s;
     }
+    .search-box:focus-within { border-color: var(--brand-gold); box-shadow: 0 0 0 3px rgba(245,184,0,0.15); color: var(--text-muted); }
     .search-box input {
-      border: none; outline: none; width: 100%; padding: 10px 4px; font-size: 0.95rem; background: transparent;
+      border: none; outline: none; width: 100%; padding: 11px 2px; font-size: 0.95rem; background: transparent; color: var(--text-main);
     }
+    .search-box input::placeholder { color: var(--text-faint); }
     .pills-scroll {
-      display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 8px; scrollbar-width: none;
+      display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 10px; scrollbar-width: none;
     }
     .pills-scroll::-webkit-scrollbar { display: none; }
     .pill {
       white-space: nowrap;
       border: 1.5px solid var(--border);
-      background: #fff;
+      background: var(--card);
       color: var(--text-main);
-      padding: 7px 14px;
+      padding: 8px 15px;
       border-radius: 99px;
       font-size: 0.84rem;
       font-weight: 700;
       cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: background .15s, color .15s, border-color .15s, transform .08s;
+      box-shadow: var(--shadow-sm);
     }
+    .pill:active { transform: scale(0.96); }
     .pill.active { background: var(--brand-dark); color: var(--brand-gold); border-color: var(--brand-dark); }
-    .chip-toggle { font-size: 0.78rem; padding: 6px 12px; }
-    .chip-toggle.active { background: #16a34a; color: #fff; border-color: #16a34a; }
-    .chip-toggle.active-gold { background: var(--brand-gold); color: #111; border-color: var(--brand-gold); }
-    .chip-toggle.active-red { background: var(--brand-red); color: #fff; border-color: var(--brand-red); }
+    .chip-toggle { font-size: 0.8rem; padding: 7px 13px; color: var(--text-muted); }
+    .chip-toggle.active { background: #e9f9ef; color: #15803d; border-color: #bbe8c9; }
+    .chip-toggle.active-gold { background: #fff6dd; color: #a3700a; border-color: #f3dc9b; }
+    .chip-toggle.active-red { background: #fff0f3; color: var(--brand-red); border-color: #fbc9d4; }
 
     /* الخريطة */
     .map-card {
-      background: #fff; border-radius: 16px; overflow: hidden; border: 1.5px solid var(--border); margin-bottom: 14px;
+      background: var(--card); border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border); margin-bottom: 16px; box-shadow: var(--shadow-sm);
     }
-    #main-map { width: 100%; height: 250px; z-index: 1; }
+    #main-map { width: 100%; height: 250px; z-index: 1; filter: saturate(0.97); }
     .map-bar {
-      padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; background: #f9fafb; font-size: 0.8rem;
+      padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; background: #fafbfc; font-size: 0.8rem; color: var(--text-muted); font-weight: 600;
+      border-top: 1px solid var(--border);
     }
+    .map-bar strong, .map-bar b { color: var(--text-main); }
+    .map-bar .row { display: flex; align-items: center; gap: 6px; }
 
     /* البطاقات */
     .cards-grid { display: flex; flex-direction: column; gap: 12px; }
     .shop-card {
-      background: #fff;
-      border-radius: 16px;
-      border: 1.5px solid var(--border);
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
       overflow: hidden;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-      transition: transform 0.1s;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow .18s, transform .12s;
     }
+    .shop-card:active { transform: scale(0.995); }
     .shop-card.gold {
-      border: 2.5px solid var(--brand-gold);
-      background: linear-gradient(180deg, #fffdf5 0%, #ffffff 35%);
+      border: 1.5px solid var(--brand-gold);
+      background: linear-gradient(180deg, #fffdf2 0%, #ffffff 40%);
+      box-shadow: var(--shadow-gold);
     }
-    .shop-top { display: flex; gap: 12px; padding: 12px; cursor: pointer; }
+    .shop-top { display: flex; gap: 13px; padding: 13px; cursor: pointer; }
     .shop-thumb {
-      width: 86px; height: 86px; border-radius: 12px; object-fit: cover; flex-shrink: 0; background: #e5e7eb;
+      width: 84px; height: 84px; border-radius: var(--radius-md); object-fit: cover; flex-shrink: 0; background: #eef0f3; border: 1px solid var(--border);
     }
     .shop-info { flex: 1; min-width: 0; }
-    .shop-title-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .shop-name { font-weight: 800; font-size: 1rem; margin: 0; }
+    .shop-title-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+    .shop-name { font-weight: 800; font-size: 1.02rem; margin: 0; letter-spacing: -0.2px; }
     .badge {
-      display: inline-flex; align-items: center; gap: 3px;
-      padding: 2px 8px; border-radius: 99px; font-size: 0.72rem; font-weight: 700;
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 99px; font-size: 0.7rem; font-weight: 700; line-height: 1.6;
     }
-    .badge-verified { background: #dbeafe; color: #1d4ed8; }
-    .badge-gold { background: var(--brand-gold); color: #111; }
-    .badge-open { background: #dcfce7; color: #15803d; }
-    .badge-duty { background: #fef3c7; color: #b45309; }
-    .badge-closed { background: #fee2e2; color: #b91c1c; }
-    .badge-pending { background: #fef3c7; color: #92400e; }
-    .shop-meta { font-size: 0.8rem; color: var(--text-muted); margin: 4px 0; }
+    .badge-verified { background: #e7f0ff; color: #1d4ed8; }
+    .badge-gold { background: linear-gradient(135deg,#fde68a,#f5b800); color: #4a3200; }
+    .badge-open { background: #e3f8e9; color: #15803d; }
+    .badge-duty { background: #fdf0d2; color: #a3700a; }
+    .badge-closed { background: #fde7ea; color: #b91c1c; }
+    .badge-pending { background: #fdf0d2; color: #92400e; }
+    .shop-meta { font-size: 0.8rem; color: var(--text-muted); margin: 5px 0; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+    .shop-meta .sep { color: var(--text-faint); margin: 0 1px; }
     .shop-offer {
-      background: #fff1f2; color: #be123c; padding: 4px 8px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; margin-top: 4px; display: inline-block;
+      background: #fff0f1; color: #be123c; padding: 5px 10px; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 700; margin-top: 6px; display: inline-flex; align-items: center; gap: 5px;
     }
+    .shop-rating { display: inline-flex; align-items: center; gap: 4px; font-size: 0.78rem; font-weight: 700; color: var(--text-main); }
+    .shop-rating .ic { color: var(--brand-gold); }
+    .no-rating { font-size: 0.76rem; color: var(--text-faint); }
     .shop-actions {
-      display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--border); background: #f9fafb;
+      display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--border); background: #fafbfc;
     }
     .shop-actions.two-cols { grid-template-columns: repeat(2, 1fr); }
     .action-btn {
-      padding: 10px 6px; text-align: center; text-decoration: none; font-weight: 700; font-size: 0.84rem;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 11px 6px; text-align: center; text-decoration: none; font-weight: 700; font-size: 0.83rem;
       color: var(--text-main); border-left: 1px solid var(--border); cursor: pointer; background: transparent; border-top: none; border-bottom: none; border-right: none;
+      transition: background .12s;
     }
+    .action-btn:active { background: rgba(0,0,0,0.04); }
     .action-btn:last-child { border-left: none; }
     .action-call { color: #15803d; }
     .action-wa { color: #059669; }
     .action-map { color: #2563eb; }
 
     /* الأزرار والنماذج */
-    .panel-card { background: #fff; border-radius: 16px; padding: 16px; border: 1.5px solid var(--border); margin-bottom: 14px; }
+    .panel-card { background: var(--card); border-radius: var(--radius-lg); padding: 17px; border: 1px solid var(--border); margin-bottom: 14px; box-shadow: var(--shadow-sm); }
     .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      padding: 11px 16px; border-radius: 12px; border: none; font-weight: 700; font-size: 0.92rem; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 12px 17px; border-radius: var(--radius-md); border: none; font-weight: 700; font-size: 0.92rem; cursor: pointer;
+      transition: filter .12s, transform .08s, box-shadow .12s;
     }
+    .btn:active { transform: scale(0.97); }
+    .btn:hover { filter: brightness(1.05); }
     .btn-block { width: 100%; }
-    .btn-primary { background: var(--brand-dark); color: var(--brand-gold); }
-    .btn-gold { background: var(--brand-gold); color: #111; }
-    .btn-green { background: var(--brand-green); color: #fff; }
-    .btn-red { background: var(--brand-red); color: #fff; }
-    .btn-outline { background: #fff; color: var(--text-main); border: 1.5px solid var(--border); }
-    .btn-sm { padding: 7px 12px; font-size: 0.8rem; border-radius: 9px; }
+    .btn-primary { background: var(--brand-dark); color: var(--brand-gold); box-shadow: var(--shadow-sm); }
+    .btn-gold { background: linear-gradient(135deg,#ffd45e,var(--brand-gold)); color: #2b1d00; box-shadow: 0 4px 12px rgba(245,184,0,0.3); }
+    .btn-green { background: var(--brand-green); color: #fff; box-shadow: 0 4px 12px rgba(22,163,74,0.25); }
+    .btn-red { background: var(--brand-red); color: #fff; box-shadow: 0 4px 12px rgba(225,29,72,0.22); }
+    .btn-outline { background: var(--card); color: var(--text-main); border: 1.5px solid var(--border-strong); }
+    .btn-outline:hover { border-color: var(--text-faint); }
+    .btn-sm { padding: 8px 13px; font-size: 0.8rem; border-radius: var(--radius-sm); }
 
-    .form-group { margin-bottom: 12px; }
-    .form-group label { display: block; font-weight: 700; font-size: 0.86rem; margin-bottom: 5px; }
+    .form-group { margin-bottom: 13px; }
+    .form-group label { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.86rem; margin-bottom: 6px; color: var(--text-main); }
     .form-control {
-      width: 100%; padding: 11px 12px; border: 1.5px solid var(--border); border-radius: 12px; font-size: 0.92rem; background: #fff;
+      width: 100%; padding: 12px 13px; border: 1.5px solid var(--border); border-radius: var(--radius-md); font-size: 0.92rem; background: var(--card); color: var(--text-main);
+      transition: border-color .15s, box-shadow .15s;
     }
+    .form-control:focus { outline: none; border-color: var(--brand-gold); box-shadow: 0 0 0 3px rgba(245,184,0,0.15); }
     .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .msg-box { padding: 10px 12px; border-radius: 10px; font-size: 0.85rem; font-weight: 700; margin-top: 10px; }
-    .msg-ok { background: #dcfce7; color: #166534; }
-    .msg-err { background: #fee2e2; color: #991b1b; }
+    .msg-box { display: flex; align-items: center; gap: 7px; padding: 11px 13px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; margin-top: 10px; }
+    .msg-ok { background: #e3f8e9; color: #166534; }
+    .msg-err { background: #fde7ea; color: #991b1b; }
 
     /* نافذة تفاصيل المحل */
     .modal-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 1200;
+      position: fixed; inset: 0; background: rgba(13,15,20,0.6); backdrop-filter: blur(2px); z-index: 1200;
       display: flex; align-items: flex-end; justify-content: center;
     }
     .modal-sheet {
-      background: #fff; width: 100%; max-width: 760px; max-height: 90vh; overflow-y: auto;
-      border-radius: 22px 22px 0 0; padding: 16px; position: relative;
+      background: var(--card); width: 100%; max-width: 760px; max-height: 90vh; overflow-y: auto;
+      border-radius: 24px 24px 0 0; padding: 18px; position: relative; box-shadow: var(--shadow-lg);
+      animation: sheet-up .22s cubic-bezier(.2,.8,.2,1);
+    }
+    @keyframes sheet-up { from { transform: translateY(24px); opacity: .4; } to { transform: translateY(0); opacity: 1; } }
+    .modal-sheet::before {
+      content: ""; position: absolute; top: 9px; left: 50%; transform: translateX(-50%);
+      width: 40px; height: 4px; border-radius: 4px; background: var(--border-strong);
     }
     .modal-close {
-      position: sticky; top: 0; float: left; background: #111318; color: #fff;
-      border: none; width: 34px; height: 34px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; z-index: 10;
+      position: sticky; top: 6px; float: left; background: var(--brand-dark); color: #fff;
+      border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; z-index: 10;
+      display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-md);
     }
 
     /* شريط التنقل السفلي */
     .bottom-nav {
-      position: fixed; bottom: 0; left: 0; right: 0; background: var(--brand-dark);
-      border-top: 2px solid var(--brand-gold); display: flex; justify-content: space-around;
-      padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); z-index: 1000;
+      position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-dark-2) 100%);
+      box-shadow: 0 -1px 0 rgba(245,184,0,0.5), var(--shadow-lg); display: flex; justify-content: space-around;
+      padding: 7px 4px calc(7px + env(safe-area-inset-bottom)); z-index: 1000;
     }
     .nav-item {
-      background: none; border: none; color: #9ca3af; font-size: 0.72rem; font-weight: 700;
-      display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 10px; cursor: pointer;
+      background: none; border: none; color: #8d94a6; font-size: 0.72rem; font-weight: 700;
+      display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 16px; cursor: pointer;
+      border-radius: var(--radius-md); transition: background .15s, color .15s;
     }
-    .nav-item span.ico { font-size: 1.25rem; }
-    .nav-item.active { color: var(--brand-gold); }
+    .nav-item.active { color: var(--brand-gold); background: rgba(245,184,0,0.12); }
 
-    .review-item { border-top: 1px solid var(--border); padding: 10px 0; }
-    .star-select { display: flex; gap: 6px; margin: 6px 0; }
-    .star-btn { font-size: 1.5rem; background: none; border: none; cursor: pointer; opacity: 0.35; }
-    .star-btn.active { opacity: 1; }
-    #picker-map { width: 100%; height: 220px; border-radius: 12px; border: 1.5px solid var(--border); margin-top: 8px; }
+    .review-item { border-top: 1px solid var(--border); padding: 11px 0; }
+    .star-select { display: flex; gap: 6px; margin: 8px 0; color: var(--text-faint); }
+    .star-btn { background: none; border: none; cursor: pointer; padding: 2px; color: var(--border-strong); transition: color .1s, transform .1s; }
+    .star-btn:active { transform: scale(0.9); }
+    .star-btn.active { color: var(--brand-gold); }
+    #picker-map { width: 100%; height: 220px; border-radius: var(--radius-md); border: 1.5px solid var(--border); margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -227,39 +295,61 @@
       </div>
     </div>
     <div class="header-actions">
-      <button id="install-pwa-btn" class="badge-user hidden" onclick="installPWA()">📲 تثبيت التطبيق</button>
-      <div id="header-user-badge" class="badge-user" onclick="switchView('auth')">دخول / تسجيل</div>
+      <button id="install-pwa-btn" class="badge-user hidden" onclick="installPWA()">
+        <svg class="ic ic-16" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+        تثبيت التطبيق
+      </button>
+      <div id="header-user-badge" class="badge-user" onclick="switchView('auth')">
+        <svg class="ic ic-16" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+        دخول / تسجيل
+      </div>
     </div>
   </header>
 
   <!-- 1. الرئيسية والدليل -->
   <main id="view-home" class="container">
     <div class="search-box">
-      <span>🔍</span>
+      <svg class="ic ic-18" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input id="search-input" type="search" placeholder="ابحث عن مطعم، صيدلية، سباك، أو منطقة..." oninput="renderShops()" />
     </div>
 
     <div id="category-pills" class="pills-scroll"></div>
 
     <div class="pills-scroll">
-      <button id="btn-my-location" class="pill" onclick="requestUserLocation()">📍 الأقرب لمكاني</button>
-      <button id="filter-open" class="pill chip-toggle" onclick="toggleQuickFilter('open')">🟢 مفتوح الآن</button>
-      <button id="filter-verified" class="pill chip-toggle" onclick="toggleQuickFilter('verified')">✓ معتمد فقط</button>
-      <button id="filter-fav" class="pill chip-toggle" onclick="toggleQuickFilter('fav')">❤️ المفضلة</button>
+      <button id="btn-my-location" class="pill" onclick="requestUserLocation()">
+        <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M12 22s7-7.58 7-12.5A7 7 0 0 0 5 9.5C5 14.42 12 22 12 22z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+        الأقرب لمكاني
+      </button>
+      <button id="filter-open" class="pill chip-toggle" onclick="toggleQuickFilter('open')">
+        <span class="dot" style="color:#16a34a;"></span> مفتوح الآن
+      </button>
+      <button id="filter-verified" class="pill chip-toggle" onclick="toggleQuickFilter('verified')">
+        <svg class="ic ic-14" viewBox="0 0 24 24" stroke-width="2.3"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
+        معتمد فقط
+      </button>
+      <button id="filter-fav" class="pill chip-toggle" onclick="toggleQuickFilter('fav')">
+        <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M12 21s-7.2-4.5-9.6-9C1.1 9 2.5 5.5 5.9 5.5c2 0 3.3 1.1 4 2.2.7-1.1 2-2.2 4-2.2 3.4 0 4.8 3.5 3.5 6.5-2.4 4.5-9.6 9-9.6 9z"/></svg>
+        المفضلة
+      </button>
     </div>
     <div id="location-status" class="shop-meta" style="margin-bottom:8px;"></div>
 
     <div id="map-wrapper" class="map-card">
       <div id="main-map"></div>
       <div class="map-bar">
-        <span>🗺️ المشاريع الظاهرة على الخريطة</span>
+        <span class="row"><svg class="ic ic-16" viewBox="0 0 24 24"><path d="M9 4L3 6v15l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v15M15 6v15"/></svg> المشاريع الظاهرة على الخريطة</span>
         <span id="shops-count" style="font-weight:700;">جاري التحميل...</span>
       </div>
-      <div id="route-bar" class="map-bar hidden" style="background:#111318;color:#fff;border-top:2px solid var(--brand-gold);">
+      <div id="route-bar" class="map-bar hidden" style="background:var(--brand-dark);color:#fff;border-top:2px solid var(--brand-gold);">
         <span id="route-info-text" style="font-weight:700;"></span>
         <div style="display:flex;gap:6px;align-items:center;">
-          <a id="route-ext-btn" class="btn btn-gold btn-sm" target="_blank" rel="noopener" href="#">🧭 ملاحة</a>
-          <button type="button" class="btn btn-outline btn-sm" style="padding:5px 9px;" onclick="clearRoute()">✕</button>
+          <a id="route-ext-btn" class="btn btn-gold btn-sm" target="_blank" rel="noopener" href="#">
+            <svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M14.5 9.5l-2 5-5 2 2-5 5-2z"/></svg>
+            ملاحة
+          </a>
+          <button type="button" class="btn btn-outline btn-sm" style="padding:6px 9px;" onclick="clearRoute()">
+            <svg class="ic ic-14" viewBox="0 0 24 24" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
         </div>
       </div>
     </div>
@@ -270,15 +360,24 @@
   <!-- 2. لوحة صاحب المشروع -->
   <section id="view-owner" class="container hidden">
     <div id="owner-not-logged" class="panel-card hidden">
-      <h3 style="margin-top:0;">🏪 أضف مشروعك أو محلك مجاناً</h3>
+      <h3 style="margin-top:0;display:flex;align-items:center;gap:8px;">
+        <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0"/><path d="M5 9v10h14V9"/><path d="M9 19v-5h6v5"/></svg>
+        أضف مشروعك أو محلك مجاناً
+      </h3>
       <p style="color:var(--text-muted); font-size:0.9rem;">سجّل حسابك أولاً لتتمكن من إضافة مشروعك، رفع صورته، وتحديث أوقات الدوام وحالة الخفارة أو الإغلاق بأي وقت.</p>
       <button class="btn btn-primary btn-block" onclick="switchView('auth')">تسجيل الدخول / إنشاء حساب</button>
     </div>
 
     <div id="owner-content" class="hidden">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <h3 style="margin:0;">🏪 مشاريعي المسجلة</h3>
-        <button class="btn btn-gold btn-sm" onclick="openOwnerForm()">+ إضافة مشروع جديد</button>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0;display:flex;align-items:center;gap:8px;">
+          <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0"/><path d="M5 9v10h14V9"/><path d="M9 19v-5h6v5"/></svg>
+          مشاريعي المسجلة
+        </h3>
+        <button class="btn btn-gold btn-sm" onclick="openOwnerForm()">
+          <svg class="ic ic-14" viewBox="0 0 24 24" stroke-width="2.3"><path d="M12 5v14M5 12h14"/></svg>
+          إضافة مشروع جديد
+        </button>
       </div>
 
       <div id="owner-shops-list" class="cards-grid" style="margin-bottom:14px;"></div>
@@ -350,7 +449,7 @@
           </div>
         </div>
 
-        <div class="panel-card" style="background:#f9fafb; padding:12px;">
+        <div class="panel-card" style="background:#fafbfc; padding:13px;">
           <label style="font-weight:800; display:flex; align-items:center; gap:8px; cursor:pointer;">
             <input type="checkbox" id="f-show-map" checked onchange="togglePickerMapVisibility()" />
             إظهار موقع المحل الدقيق على الخريطة
@@ -360,7 +459,10 @@
           </small>
 
           <div id="picker-map-box" style="margin-top:10px;">
-            <button type="button" id="btn-gps-pick" class="btn btn-outline btn-sm" onclick="pickCurrentGPS()">📍 حدد موقعي الحالي تلقائياً</button>
+            <button type="button" id="btn-gps-pick" class="btn btn-outline btn-sm" onclick="pickCurrentGPS()">
+              <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M12 22s7-7.58 7-12.5A7 7 0 0 0 5 9.5C5 14.42 12 22 12 22z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+              حدد موقعي الحالي تلقائياً
+            </button>
             <span id="coords-label" style="font-size:0.78rem; color:var(--text-muted); margin-right:6px;">المس الخريطة لتثبيت الدبوس</span>
             <div id="picker-map"></div>
             <input type="hidden" id="f-lat" />
@@ -371,11 +473,14 @@
         <div class="form-group">
           <label>صورة واجهة المحل أو الشعار (يتم ضغطها تلقائياً)</label>
           <input id="f-image" type="file" accept="image/*" class="form-control" onchange="previewShopImage(event)" />
-          <img id="f-image-preview" class="hidden" style="width:100%; max-height:180px; object-fit:cover; border-radius:12px; margin-top:8px;" />
+          <img id="f-image-preview" class="hidden" style="width:100%; max-height:180px; object-fit:cover; border-radius:var(--radius-md); margin-top:8px;" />
         </div>
 
         <div class="row-2">
-          <button id="btn-save-shop" class="btn btn-green" onclick="saveShop()">💾 حفظ وإرسال للمراجعة</button>
+          <button id="btn-save-shop" class="btn btn-green" onclick="saveShop()">
+            <svg class="ic ic-16" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+            حفظ وإرسال للمراجعة
+          </button>
           <button id="btn-cancel-edit" class="btn btn-outline" onclick="closeOwnerForm()">إلغاء</button>
         </div>
         <div id="owner-form-msg"></div>
@@ -385,12 +490,27 @@
 
   <!-- 3. لوحة الإدارة السرية -->
   <section id="view-admin" class="container hidden">
-    <h3 style="margin-top:0;">🛡️ لوحة تحكم إدارة ويز اليوسفية </h3>
+    <h3 style="margin-top:0;display:flex;align-items:center;gap:8px;">
+      <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3z"/></svg>
+      لوحة تحكم إدارة ويز اليوسفية
+    </h3>
     <div class="pills-scroll" id="admin-tabs">
-      <button class="pill active" onclick="loadAdminTab('pending', this)">⏳ طلبات معلقة</button>
-      <button class="pill" onclick="loadAdminTab('shops', this)">🏪 المشاريع والاشتراكات</button>
-      <button class="pill" onclick="loadAdminTab('reviews', this)">⭐ فحص التقييمات</button>
-      <button class="pill" onclick="loadAdminTab('settings', this)">⚙️ إعدادات الخريطة</button>
+      <button class="pill active" onclick="loadAdminTab('pending', this)">
+        <svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        طلبات معلقة
+      </button>
+      <button class="pill" onclick="loadAdminTab('shops', this)">
+        <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0"/><path d="M5 9v10h14V9"/><path d="M9 19v-5h6v5"/></svg>
+        المشاريع والاشتراكات
+      </button>
+      <button class="pill" onclick="loadAdminTab('reviews', this)">
+        <svg class="ic ic-14 ic-fill" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2.5l2.95 6.26 6.9.76-5.13 4.73 1.4 6.78L12 17.9 5.88 21.03l1.4-6.78L2.15 9.52l6.9-.76L12 2.5z"/></svg>
+        فحص التقييمات
+      </button>
+      <button class="pill" onclick="loadAdminTab('settings', this)">
+        <svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        إعدادات الخريطة
+      </button>
     </div>
     <div id="admin-panel-body"></div>
   </section>
@@ -419,7 +539,10 @@
     </div>
 
     <div id="auth-logged-in" class="panel-card hidden">
-      <h3 style="margin-top:0;">👤 حسابي</h3>
+      <h3 style="margin-top:0;display:flex;align-items:center;gap:8px;">
+        <svg class="ic ic-20" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+        حسابي
+      </h3>
       <p id="profile-info" style="font-size:0.95rem;"></p>
       <button class="btn btn-red btn-block" onclick="logout()">تسجيل الخروج</button>
     </div>
@@ -428,17 +551,31 @@
   <!-- نافذة تفاصيل المشروع والتقييمات -->
   <div id="modal-shop" class="modal-overlay hidden" onclick="if(event.target===this) closeShopModal()">
     <div class="modal-sheet">
-      <button id="close-shop-modal" class="modal-close" onclick="closeShopModal()">✕</button>
+      <button id="close-shop-modal" class="modal-close" onclick="closeShopModal()">
+        <svg class="ic ic-16" viewBox="0 0 24 24" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
       <div id="modal-shop-body"></div>
     </div>
   </div>
 
   <!-- شريط التنقل السفلي -->
   <nav class="bottom-nav">
-    <button id="nav-home" class="nav-item active" onclick="switchView('home')"><span class="ico">🗺️</span>الدليل</button>
-    <button id="nav-owner" class="nav-item" onclick="switchView('owner')"><span class="ico">🏪</span>مشروعي</button>
-    <button id="nav-admin" class="nav-item hidden" onclick="switchView('admin')"><span class="ico">🛡️</span>الإدارة</button>
-    <button id="nav-auth" class="nav-item" onclick="switchView('auth')"><span class="ico">👤</span>حسابي</button>
+    <button id="nav-home" class="nav-item active" onclick="switchView('home')">
+      <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M9 4L3 6v15l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v15M15 6v15"/></svg>
+      الدليل
+    </button>
+    <button id="nav-owner" class="nav-item" onclick="switchView('owner')">
+      <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0"/><path d="M5 9v10h14V9"/><path d="M9 19v-5h6v5"/></svg>
+      مشروعي
+    </button>
+    <button id="nav-admin" class="nav-item hidden" onclick="switchView('admin')">
+      <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3z"/></svg>
+      الإدارة
+    </button>
+    <button id="nav-auth" class="nav-item" onclick="switchView('auth')">
+      <svg class="ic ic-20" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+      حسابي
+    </button>
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
