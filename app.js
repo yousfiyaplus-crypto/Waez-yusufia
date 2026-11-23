@@ -45,6 +45,7 @@ const ICONS = {
   flag: '<svg class="ic ic-14" viewBox="0 0 24 24"><path d="M5 3v18"/><path d="M5 4h11l-2 4 2 4H5"/></svg>',
   store: '<svg class="ic ic-14" viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0"/><path d="M5 9v10h14V9"/><path d="M9 19v-5h6v5"/></svg>',
   clock: '<svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  warn: '<svg class="ic ic-14" viewBox="0 0 24 24"><path d="M12 3L2 20h20L12 3z"/><path d="M12 10v4M12 17.5v.1"/></svg>',
 };
 
 // ===== أدوات مساعدة آمنة =====
@@ -79,7 +80,101 @@ function safeImageUrl(url) {
 function showMsg(elId, text, isOk = true) {
   const el = document.getElementById(elId);
   if (!el) return;
-  el.innerHTML = `<div class="msg-box ${isOk ? 'msg-ok' : 'msg-err'}">${escapeHtml(text)}</div>`;
+  el.innerHTML = `<div class="msg-box ${isOk ? 'msg-ok' : 'msg-err'}">${isOk ? ICONS.check : ICONS.warn}${escapeHtml(text)}</div>`;
+}
+
+// ===== تنبيهات عائمة (Toast) =====
+function showToast(message, type = 'ok', duration = 2800) {
+  const host = document.getElementById('toast-host');
+  if (!host) return;
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = message;
+  host.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => {
+    t.classList.remove('show');
+    setTimeout(() => t.remove(), 250);
+  }, duration);
+}
+
+// ===== نافذة تأكيد/إدخال عامة (بديل عن confirm/prompt/alert الأصلية بالمتصفح) =====
+function showDialog({ message, withInput = false, confirmText = 'تأكيد', danger = true, placeholder = '' }) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('generic-dialog');
+    const msgEl = document.getElementById('gd-message');
+    const inputWrap = document.getElementById('gd-input-wrap');
+    const input = document.getElementById('gd-input');
+    const confirmBtn = document.getElementById('gd-confirm');
+    const cancelBtn = document.getElementById('gd-cancel');
+
+    msgEl.textContent = message;
+    inputWrap.classList.toggle('hidden', !withInput);
+    input.value = '';
+    input.placeholder = placeholder;
+    confirmBtn.textContent = confirmText;
+    confirmBtn.className = `btn ${danger ? 'btn-red' : 'btn-primary'} btn-block`;
+    overlay.classList.remove('hidden');
+    if (withInput) setTimeout(() => input.focus(), 150);
+
+    const cleanup = (result) => {
+      overlay.classList.add('hidden');
+      overlay.onclick = null;
+      confirmBtn.onclick = null;
+      cancelBtn.onclick = null;
+      resolve(result);
+    };
+    cancelBtn.onclick = () => cleanup(withInput ? null : false);
+    confirmBtn.onclick = () => cleanup(withInput ? (input.value.trim() || null) : true);
+    overlay.onclick = (e) => { if (e.target === overlay) cleanup(withInput ? null : false); };
+  });
+}
+
+// ===== تطبيع النص العربي للبحث (يتجاهل التشكيل واختلاف الألف/التاء المربوطة) =====
+function normalizeAr(str) {
+  return String(str || '')
+    .toLowerCase()
+    .replace(/[ً-ٰٟ]/g, '')
+    .replace(/ـ/g, '')
+    .replace(/[إأآا]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .trim();
+}
+
+// ===== معالجة البحث مع تأخير بسيط (debounce) لسلاسة الكتابة =====
+let searchDebounceTimer = null;
+function onSearchInput() {
+  toggleSearchClearBtn();
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(renderShops, 150);
+}
+
+function toggleSearchClearBtn() {
+  const input = document.getElementById('search-input');
+  const btn = document.getElementById('search-clear-btn');
+  if (input && btn) btn.classList.toggle('show', input.value.length > 0);
+}
+
+function clearSearch() {
+  const input = document.getElementById('search-input');
+  input.value = '';
+  input.focus();
+  toggleSearchClearBtn();
+  renderShops();
+}
+
+function clearAllFilters() {
+  selectedCategory = 'all';
+  quickFilters = { open: false, verified: false, fav: false };
+  document.getElementById('search-input').value = '';
+  toggleSearchClearBtn();
+  ['open', 'verified', 'fav'].forEach(k => {
+    const btn = document.getElementById(`filter-${k}`);
+    btn.classList.remove('active', 'active-gold', 'active-red');
+  });
+  renderCategoryPills();
+  renderShops();
 }
 
 // حساب المسافة بالكيلومتر (Haversine)
@@ -170,9 +265,13 @@ function installPWA() {
 // ===== التنقل =====
 function switchView(viewName) {
   ['home', 'owner', 'admin', 'auth'].forEach(v => {
-    document.getElementById(`view-${v}`).classList.toggle('hidden', v !== viewName);
+    const el = document.getElementById(`view-${v}`);
+    const show = v === viewName;
+    el.classList.toggle('hidden', !show);
+    el.classList.remove('view-enter');
+    if (show) { void el.offsetWidth; el.classList.add('view-enter'); }
     const nav = document.getElementById(`nav-${v}`);
-    if (nav) nav.classList.toggle('active', v === viewName);
+    if (nav) nav.classList.toggle('active', show);
   });
 
   if (viewName === 'home' && mainMap) {
@@ -241,19 +340,27 @@ async function submitAuth() {
     return showMsg('auth-msg', 'يرجى إدخال بريد إلكتروني صحيح وكلمة مرور من ٦ أحرف على الأقل.', false);
   }
 
+  const btn = document.getElementById('auth-submit-btn');
+  const btnDefaultHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> جاري التحقق...`;
+  const restoreBtn = () => { btn.disabled = false; btn.innerHTML = btnDefaultHtml; };
+
   if (authMode === 'login') {
     const { error } = await sb.auth.signInWithPassword({ email, password });
+    restoreBtn();
     if (error) return showMsg('auth-msg', 'تأكد من الإيميل وكلمة المرور أو تفعيل الحساب من إيميلك.', false);
     showMsg('auth-msg', 'تم تسجيل الدخول بنجاح!', true);
     await loadInitialData();
     switchView('home');
   } else {
-    if (!fullName) return showMsg('auth-msg', 'يرجى كتابة اسمك الكامل.', false);
+    if (!fullName) { restoreBtn(); return showMsg('auth-msg', 'يرجى كتابة اسمك الكامل.', false); }
     const { data, error } = await sb.auth.signUp({
       email,
       password,
       options: { data: { full_name: fullName } }
     });
+    restoreBtn();
     if (error) return showMsg('auth-msg', error.message, false);
     if (data?.session) {
       showMsg('auth-msg', 'تم إنشاء الحساب وتسجيل الدخول بنجاح!', true);
@@ -441,7 +548,8 @@ function clearRoute() {
 }
 
 function renderShops() {
-  const q = document.getElementById('search-input').value.trim().toLowerCase();
+  toggleSearchClearBtn();
+  const q = normalizeAr(document.getElementById('search-input').value.trim());
   const catMap = Object.fromEntries(categories.map(c => [c.id, c]));
 
   let list = allShops.map(s => {
@@ -458,7 +566,7 @@ function renderShops() {
     if (quickFilters.verified && !s.is_verified) return false;
     if (quickFilters.fav && !favorites.includes(s.id)) return false;
     if (q) {
-      const hay = `${s.name} ${s.description || ''} ${s.area_text} ${s.daily_offer || ''}`.toLowerCase();
+      const hay = normalizeAr(`${s.name} ${s.description || ''} ${s.area_text} ${s.daily_offer || ''} ${catMap[s.category_id]?.name || ''}`);
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -498,7 +606,12 @@ function renderShops() {
   // عرض البطاقات
   const container = document.getElementById('shops-list');
   if (list.length === 0) {
-    container.innerHTML = `<div class="panel-card" style="text-align:center;color:var(--text-muted);">لا توجد مشاريع مطابقة لبحثك حالياً.</div>`;
+    container.innerHTML = `
+      <div class="empty-state">
+        <svg class="ic ic-22" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <p>لا توجد مشاريع مطابقة لبحثك أو فلاترك الحالية.</p>
+        <button class="btn btn-outline btn-sm" onclick="clearAllFilters()">مسح البحث والفلاتر</button>
+      </div>`;
     return;
   }
 
@@ -544,10 +657,20 @@ function trackMetric(shopId, metric) {
 }
 
 function toggleFav(shopId) {
-  if (favorites.includes(shopId)) favorites = favorites.filter(id => id !== shopId);
+  const nowFav = !favorites.includes(shopId);
+  if (!nowFav) favorites = favorites.filter(id => id !== shopId);
   else favorites.push(shopId);
   localStorage.setItem('yp_favs', JSON.stringify(favorites));
-  openShopModal(shopId);
+  openShopModal(shopId).then(() => {
+    if (!nowFav) return;
+    const btn = document.querySelector('#modal-shop-body button[onclick*="toggleFav"]');
+    if (btn && btn.animate) {
+      btn.animate(
+        [{ transform: 'scale(1)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }],
+        { duration: 280, easing: 'ease-out' }
+      );
+    }
+  });
   renderShops();
 }
 
@@ -615,7 +738,7 @@ async function openShopModal(shopId) {
         </div>
         <input type="hidden" id="rev-rating-val" value="5" />
         <textarea id="rev-comment" class="form-control" rows="2" placeholder="اكتب تجربتك بكل أمانة..."></textarea>
-        <button class="btn btn-gold btn-sm" style="margin-top:8px;" onclick="submitReview('${shop.id}')">إرسال التقييم للمراجعة</button>
+        <button id="rev-submit-btn" class="btn btn-gold btn-sm" style="margin-top:8px;" onclick="submitReview('${shop.id}')">إرسال التقييم للمراجعة</button>
         <div id="rev-msg"></div>
       </div>
     `}
@@ -652,6 +775,10 @@ async function submitReview(shopId) {
   const comment = document.getElementById('rev-comment').value.trim();
   const reviewerName = currentProfile?.full_name || currentUser.email.split('@')[0];
 
+  const btn = document.getElementById('rev-submit-btn');
+  const btnDefaultHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> جاري الإرسال...`; }
+
   const { error } = await sb.from('reviews').insert({
     shop_id: shopId,
     user_id: currentUser.id,
@@ -660,16 +787,24 @@ async function submitReview(shopId) {
     comment
   });
 
-  if (error) return showMsg('rev-msg', 'تعذر إرسال التقييم (ربما قيّمت سابقاً).', false);
+  if (error) {
+    if (btn) { btn.disabled = false; btn.innerHTML = btnDefaultHtml; }
+    return showMsg('rev-msg', 'تعذر إرسال التقييم (ربما قيّمت سابقاً).', false);
+  }
   showMsg('rev-msg', 'تم إرسال تقييمك! سيظهر بعد فحصه واعتماده من الإدارة.', true);
   setTimeout(() => openShopModal(shopId), 1200);
 }
 
 async function reportFakeReview(reviewId, shopId) {
-  const reason = prompt('اكتب سبب الشك أو التزييف بإيجاز:');
+  const reason = await showDialog({
+    message: 'اكتب سبب الشك أو التزييف بإيجاز:',
+    withInput: true,
+    confirmText: 'إرسال البلاغ',
+    placeholder: 'مثال: نفس الشخص يقيّم من أكثر من حساب',
+  });
   if (!reason) return;
   await sb.rpc('report_review', { p_review_id: reviewId, p_reason: reason });
-  alert('تم رفع البلاغ للإدارة لفحص حساب المقيّم.');
+  showToast(`${ICONS.check} تم رفع البلاغ للإدارة لفحص حساب المقيّم.`, 'ok');
   openShopModal(shopId);
 }
 
@@ -793,14 +928,14 @@ function setPickerPin(lat, lng) {
 }
 
 function pickCurrentGPS() {
-  if (!navigator.geolocation) return alert('المتصفح لا يدعم GPS');
+  if (!navigator.geolocation) return showToast(`${ICONS.warn} المتصفح لا يدعم GPS`, 'err');
   document.getElementById('coords-label').textContent = 'جاري سحب الإحداثيات...';
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       pickerMap.setView([pos.coords.latitude, pos.coords.longitude], 16);
       setPickerPin(pos.coords.latitude, pos.coords.longitude);
     },
-    () => alert('تعذر تحديد موقعك. المس الخريطة يدوياً أو فعّل الـ GPS.'),
+    () => showToast(`${ICONS.warn} تعذر تحديد موقعك. المس الخريطة يدوياً أو فعّل الـ GPS.`, 'err'),
     { enableHighAccuracy: true, timeout: 10000 }
   );
 }
@@ -1000,10 +1135,15 @@ async function adminUpdateShop(id, changes) {
 }
 
 async function adminDeleteShop(id) {
-  if (!confirm('هل أنت متأكد من حذف هذا المشروع نهائياً؟')) return;
+  const ok = await showDialog({
+    message: 'هل أنت متأكد من حذف هذا المشروع نهائياً؟ لا يمكن التراجع عن هذا الإجراء.',
+    confirmText: 'حذف نهائياً',
+  });
+  if (!ok) return;
   await sb.from('shops').delete().eq('id', id);
   await loadInitialData();
   loadAdminTab('shops');
+  showToast(`${ICONS.check} تم حذف المشروع.`, 'ok');
 }
 
 async function adminUpdateReview(id, status) {

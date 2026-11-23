@@ -118,6 +118,8 @@
       border: none; outline: none; width: 100%; padding: 11px 2px; font-size: 0.95rem; background: transparent; color: var(--text-main);
     }
     .search-box input::placeholder { color: var(--text-faint); }
+    .search-box input::-webkit-search-cancel-button,
+    .search-box input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }
     .pills-scroll {
       display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 10px; scrollbar-width: none;
     }
@@ -282,6 +284,57 @@
     .star-btn:active { transform: scale(0.9); }
     .star-btn.active { color: var(--brand-gold); }
     #picker-map { width: 100%; height: 220px; border-radius: var(--radius-md); border: 1.5px solid var(--border); margin-top: 8px; }
+
+    /* بحث: زر مسح */
+    .search-clear { display: none; background: none; border: none; color: var(--text-faint); cursor: pointer; padding: 4px; border-radius: 50%; flex-shrink: 0; }
+    .search-clear.show { display: flex; }
+    .search-clear:hover { color: var(--text-muted); background: var(--bg-page); }
+
+    /* هياكل تحميل (Skeleton) */
+    .skeleton { position: relative; overflow: hidden; background: #ecedf1; border-radius: var(--radius-md); }
+    .skeleton::after {
+      content: ""; position: absolute; inset: 0; transform: translateX(100%);
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.65), transparent);
+      animation: shimmer 1.4s infinite;
+    }
+    @keyframes shimmer { 100% { transform: translateX(-100%); } }
+    .skeleton-card { display: flex; gap: 13px; padding: 13px; background: var(--card); border-radius: var(--radius-lg); border: 1px solid var(--border); margin-bottom: 12px; }
+    .skeleton-thumb { width: 84px; height: 84px; border-radius: var(--radius-md); flex-shrink: 0; }
+    .skeleton-lines { flex: 1; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+    .skeleton-line { height: 11px; border-radius: 6px; }
+
+    /* انتقال سلس بين الصفحات */
+    .view-enter { animation: view-fade .22s ease both; }
+    @keyframes view-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* مؤشر تحميل دوّار */
+    .spinner { display: inline-block; width: 15px; height: 15px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); border-top-color: currentColor; animation: spin .7s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* حالة فارغة */
+    .empty-state { text-align: center; padding: 34px 16px; color: var(--text-muted); }
+    .empty-state .ic { color: var(--text-faint); margin-bottom: 10px; }
+    .empty-state p { margin: 0 0 12px; font-size: 0.9rem; }
+
+    /* تنبيهات عائمة (Toast) */
+    #toast-host {
+      position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%); z-index: 1500;
+      display: flex; flex-direction: column; gap: 8px; align-items: center; width: 100%; max-width: 480px;
+      padding: 0 16px; pointer-events: none;
+    }
+    .toast {
+      background: var(--brand-dark); color: #fff; padding: 12px 18px; border-radius: 99px; font-size: 0.85rem; font-weight: 700;
+      box-shadow: var(--shadow-lg); opacity: 0; transform: translateY(10px) scale(0.96); transition: opacity .2s, transform .2s;
+      max-width: 100%; text-align: center; display: flex; align-items: center; gap: 8px; justify-content: center;
+    }
+    .toast.show { opacity: 1; transform: translateY(0) scale(1); }
+    .toast.err { background: var(--brand-red); }
+    .toast.ok { background: #15803d; }
+
+    /* نافذة تأكيد/إدخال عامة */
+    #generic-dialog .modal-sheet { max-width: 420px; border-radius: var(--radius-xl); padding: 20px; }
+    #generic-dialog .modal-sheet::before { display: none; }
+    #gd-message { font-size: 0.95rem; font-weight: 700; margin: 2px 0 14px; line-height: 1.6; }
   </style>
 </head>
 <body>
@@ -310,7 +363,10 @@
   <main id="view-home" class="container">
     <div class="search-box">
       <svg class="ic ic-18" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="search-input" type="search" placeholder="ابحث عن مطعم، صيدلية، سباك، أو منطقة..." oninput="renderShops()" />
+      <input id="search-input" type="search" placeholder="ابحث عن مطعم، صيدلية، سباك، أو منطقة..." oninput="onSearchInput()" />
+      <button type="button" id="search-clear-btn" class="search-clear" aria-label="مسح البحث" onclick="clearSearch()">
+        <svg class="ic ic-16" viewBox="0 0 24 24" stroke-width="2.3"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
     </div>
 
     <div id="category-pills" class="pills-scroll"></div>
@@ -347,14 +403,18 @@
             <svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M14.5 9.5l-2 5-5 2 2-5 5-2z"/></svg>
             ملاحة
           </a>
-          <button type="button" class="btn btn-outline btn-sm" style="padding:6px 9px;" onclick="clearRoute()">
+          <button type="button" class="btn btn-outline btn-sm" style="padding:6px 9px;" onclick="clearRoute()" aria-label="إغلاق المسار">
             <svg class="ic ic-14" viewBox="0 0 24 24" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg>
           </button>
         </div>
       </div>
     </div>
 
-    <div id="shops-list" class="cards-grid"></div>
+    <div id="shops-list" class="cards-grid">
+      <div class="skeleton-card"><div class="skeleton skeleton-thumb"></div><div class="skeleton-lines"><div class="skeleton skeleton-line" style="width:60%;"></div><div class="skeleton skeleton-line" style="width:85%;"></div><div class="skeleton skeleton-line" style="width:40%;"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton skeleton-thumb"></div><div class="skeleton-lines"><div class="skeleton skeleton-line" style="width:50%;"></div><div class="skeleton skeleton-line" style="width:75%;"></div><div class="skeleton skeleton-line" style="width:35%;"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton skeleton-thumb"></div><div class="skeleton-lines"><div class="skeleton skeleton-line" style="width:65%;"></div><div class="skeleton skeleton-line" style="width:80%;"></div><div class="skeleton skeleton-line" style="width:45%;"></div></div></div>
+    </div>
   </main>
 
   <!-- 2. لوحة صاحب المشروع -->
@@ -551,12 +611,29 @@
   <!-- نافذة تفاصيل المشروع والتقييمات -->
   <div id="modal-shop" class="modal-overlay hidden" onclick="if(event.target===this) closeShopModal()">
     <div class="modal-sheet">
-      <button id="close-shop-modal" class="modal-close" onclick="closeShopModal()">
+      <button id="close-shop-modal" class="modal-close" onclick="closeShopModal()" aria-label="إغلاق">
         <svg class="ic ic-16" viewBox="0 0 24 24" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
       <div id="modal-shop-body"></div>
     </div>
   </div>
+
+  <!-- نافذة تأكيد / إدخال عامة -->
+  <div id="generic-dialog" class="modal-overlay hidden" style="z-index:1400;">
+    <div class="modal-sheet">
+      <p id="gd-message"></p>
+      <div id="gd-input-wrap" class="form-group hidden">
+        <textarea id="gd-input" class="form-control" rows="2"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button id="gd-confirm" class="btn btn-red btn-block">تأكيد</button>
+        <button id="gd-cancel" class="btn btn-outline btn-block">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- حاوية التنبيهات العائمة -->
+  <div id="toast-host"></div>
 
   <!-- شريط التنقل السفلي -->
   <nav class="bottom-nav">
