@@ -23,6 +23,7 @@ let deferredPrompt = null;
 
 let mainMap = null;
 let mainMarkersLayer = null;
+let routeLayer = null;
 let pickerMap = null;
 let pickerMarker = null;
 let pendingCompressedBlob = null;
