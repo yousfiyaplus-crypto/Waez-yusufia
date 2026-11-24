@@ -1,19 +1,20 @@
 // js/map.js — خريطة ويز: طبقة داكنة، دبابيس SVG حسب القسم، تجميع، بطاقة معاينة، ومسار.
-const TILE_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
-const TILE_URLS = {
-  dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-  light: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-};
-let meLayer = null, tileLayerRef = null, mapStyle = 'dark', mapShopIndex = {}, mapFitPending = true;
+const TILE_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+let meLayer = null, mapStyle = 'dark', mapShopIndex = {}, mapFitPending = true;
 
-function makeTiles(style) {
-  return L.tileLayer(TILE_URLS[style] || TILE_URLS.light, { attribution: TILE_ATTR, subdomains: 'abcd', maxZoom: 19 });
+// طبقة OpenStreetMap (بلا مفتاح API). النمط الليلي يتم بفلتر CSS على الطبقة فقط، فلا تتأثر الدبابيس.
+function makeTiles() {
+  return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: TILE_ATTR, subdomains: 'abc', maxZoom: 19 });
+}
+function applyMapTheme() {
+  document.getElementById('main-map')?.classList.toggle('map-dark', mapStyle === 'dark');
+  document.getElementById('tool-style')?.classList.toggle('on', mapStyle === 'light');
 }
 
 function initMainMap() {
   try { if (localStorage.getItem('yp_map_style') === 'light') mapStyle = 'light'; } catch (_) {}
   mainMap = L.map('main-map').setView(YUSUFIYA_CENTER, 14);
-  tileLayerRef = makeTiles(mapStyle).addTo(mainMap);
+  makeTiles().addTo(mainMap);
   mainMarkersLayer = (L.markerClusterGroup
     ? L.markerClusterGroup({
         showCoverageOnHover: false, maxClusterRadius: 46,
@@ -23,16 +24,13 @@ function initMainMap() {
   meLayer = L.layerGroup().addTo(mainMap);
   routeLayer = L.layerGroup().addTo(mainMap);
   mainMap.on('click', hideMapPreview);
-  document.getElementById('tool-style')?.classList.toggle('on', mapStyle === 'light');
+  applyMapTheme();
 }
 
 function toggleMapStyle() {
   mapStyle = mapStyle === 'dark' ? 'light' : 'dark';
   try { localStorage.setItem('yp_map_style', mapStyle); } catch (_) {}
-  mainMap.removeLayer(tileLayerRef);
-  tileLayerRef = makeTiles(mapStyle).addTo(mainMap);
-  tileLayerRef.bringToBack();
-  document.getElementById('tool-style')?.classList.toggle('on', mapStyle === 'light');
+  applyMapTheme();
 }
 
 function fitMapToShops() {

@@ -99,7 +99,7 @@ function initPickerMap(lat, lng) {
   const center = (lat && lng) ? [lat, lng] : YUSUFIYA_CENTER;
   if (!pickerMap) {
     pickerMap = L.map('picker-map').setView(center, 14);
-    makeTiles('light').addTo(pickerMap);
+    makeTiles().addTo(pickerMap);
     pickerMap.on('click', (e) => setPickerPin(e.latlng.lat, e.latlng.lng));
   } else {
     pickerMap.setView(center, 14);

@@ -457,6 +457,7 @@
     /* ===== v3: خريطة الليل + أيقونات SVG ===== */
     .map-card { position: relative; border-color: #1c2030; background: #0d0f14; }
     #main-map { height: min(64vh, 460px); min-height: 340px; background: #0d0f14; filter: none; }
+    #main-map.map-dark .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.9) contrast(.92) saturate(.5); }
     .leaflet-container { font-family: 'Cairo', sans-serif; background: #0d0f14; }
     .leaflet-bar a, .leaflet-bar a:hover { background: #0d0f14; color: #f5b800; border-color: #262b38; }
     .leaflet-control-attribution { background: rgba(13,15,20,.72) !important; color: #8d94a6 !important; font-size: 10px; }
