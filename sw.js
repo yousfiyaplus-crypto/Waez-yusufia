@@ -1,5 +1,11 @@
-const CACHE_NAME = 'waez-yusufiya-v3';
-const APP_SHELL = ['./', './index.html', './app.js', './manifest.json'];
+const CACHE_NAME = 'waez-yusufiya-v5';
+const APP_SHELL = [
+  './', './index.html', './manifest.json',
+  './js/config.js', './js/utils.js', './js/auth.js', './js/router.js',
+  './js/requests.js', './js/community.js', './js/filters.js', './js/map.js',
+  './js/shops.js', './js/shop-modal.js', './js/owner.js', './js/admin.js',
+  './js/notifications.js', './js/main.js',
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

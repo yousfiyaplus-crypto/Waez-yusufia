@@ -2,8 +2,16 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ويز اليوسفية | دليل وخريطة المنطقة</title>
+  <meta name="description" content="دليل وخريطة تفاعلية لمحلات وخدمات منطقة اليوسفية في بغداد: مواعيد الدوام، التقييمات، طلب خدمة، وتحديثات محلية يومية." />
+  <link rel="canonical" href="https://waez-yusufiya.example/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="ويز اليوسفية | دليل وخريطة المنطقة" />
+  <meta property="og:description" content="دليل وخريطة تفاعلية لمحلات وخدمات منطقة اليوسفية في بغداد: مواعيد الدوام، التقييمات، طلب خدمة، وتحديثات محلية يومية." />
+  <meta property="og:image" content="./logo-512.png" />
+  <meta property="og:locale" content="ar_IQ" />
+  <meta name="twitter:card" content="summary" />
   <meta name="theme-color" content="#0d0f14" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -13,6 +21,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "ويز اليوسفية",
+    "description": "دليل وخريطة تفاعلية لمحلات وخدمات منطقة اليوسفية في بغداد.",
+    "inLanguage": "ar"
+  }
+  </script>
+  <!-- يُملأ ديناميكياً عبر js/router.js عند فتح تفاصيل أي مشروع (بيانات LocalBusiness لتحسين الفهرسة) -->
+  <script type="application/ld+json" id="shop-jsonld"></script>
   <style>
     :root {
       --brand-dark: #0d0f14;
@@ -48,6 +67,7 @@
     button { font-family: inherit; }
     .search-box input, .form-control { font-size: 16px !important; }
     .hidden { display: none !important; }
+    .link-btn { background: none; border: none; color: var(--brand-blue); font-size: 0.8rem; cursor: pointer; padding: 0; text-decoration: underline; }
     ::selection { background: rgba(245,184,0,0.35); }
 
     /* أيقونات SVG */
@@ -378,6 +398,7 @@
     .nav-item { flex:1; padding:7px 5px; font-size:.68rem; }
     .nav-item.active { color:#ffd34f; background:rgba(245,184,0,.13); }
     button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline:3px solid rgba(245,184,0,.48); outline-offset:2px; }
+    .activity-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 16px}.activity-item{display:flex;gap:12px;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--card);margin-bottom:10px}.activity-item.unread{border-color:rgba(245,184,0,.55);background:rgba(245,184,0,.055)}.activity-icon{width:38px;height:38px;flex:0 0 38px;border-radius:12px;display:grid;place-items:center;background:rgba(245,184,0,.14);color:var(--brand-gold);font-weight:800}.activity-item p{margin:5px 0;color:var(--text-muted);font-size:.88rem;line-height:1.6}.activity-item small{color:var(--text-faint)}.nav-count{display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 4px;border-radius:20px;background:#dc2626;color:white;font-size:10px;margin-right:3px}
     @media (min-width:650px) { .home-hero { padding:28px 30px 20px; } .hero-stats { max-width:390px; } .cards-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; } .shop-card { min-width:0; } }
     @media (max-width:380px) { .home-hero { padding:19px 16px 15px; } .hero-stats { gap:10px; } .hero-stats span { font-size:.61rem; } .hero-actions button { padding:8px 11px; } }
 
@@ -755,6 +776,13 @@
     <div id="admin-panel-body"></div>
   </section>
 
+  <!-- مركز النشاط والإشعارات -->
+  <section id="view-activity" class="container hidden">
+    <div class="section-heading"><div><span class="eyebrow">كل ما يخصك</span><h2>مركز النشاط</h2></div></div>
+    <div class="activity-toolbar"><span id="activity-summary" style="color:var(--text-muted);font-size:.85rem;">إشعاراتك وتحديثات طلباتك</span><button class="btn btn-outline btn-sm" onclick="markAllNotificationsRead()">قراءة الكل</button></div>
+    <div id="activity-list"><div class="panel-card">سجّل الدخول لمشاهدة نشاطك.</div></div>
+  </section>
+
   <!-- 4. الحساب -->
   <section id="view-auth" class="container hidden">
     <div id="auth-forms-card" class="panel-card">
@@ -774,8 +802,30 @@
         <label>كلمة المرور (٦ أحرف على الأقل)</label>
         <input id="auth-password" type="password" class="form-control" placeholder="••••••••" />
       </div>
+      <div style="text-align:left;margin:-6px 0 10px;">
+        <button type="button" class="link-btn" onclick="toggleForgotPassword()">نسيت كلمة المرور؟</button>
+      </div>
       <button id="auth-submit-btn" class="btn btn-gold btn-block" onclick="submitAuth()">دخول</button>
       <div id="auth-msg"></div>
+
+      <div id="forgot-pass-box" class="hidden" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+        <div class="form-group">
+          <label>أدخل بريدك لإرسال رابط إعادة تعيين كلمة المرور</label>
+          <input id="forgot-email" type="email" class="form-control" placeholder="example@gmail.com" />
+        </div>
+        <button id="forgot-pass-btn" type="button" class="btn btn-outline btn-block" onclick="requestPasswordReset()">إرسال رابط إعادة التعيين</button>
+        <div id="forgot-pass-msg"></div>
+      </div>
+    </div>
+
+    <div id="reset-pass-box" class="panel-card hidden">
+      <h3 style="margin-top:0;">تعيين كلمة مرور جديدة</h3>
+      <div class="form-group">
+        <label>كلمة المرور الجديدة (٦ أحرف على الأقل)</label>
+        <input id="new-password" type="password" class="form-control" placeholder="••••••••" />
+      </div>
+      <button id="reset-pass-btn" type="button" class="btn btn-gold btn-block" onclick="submitNewPassword()">تحديث كلمة المرور</button>
+      <div id="reset-pass-msg"></div>
     </div>
 
     <div id="auth-logged-in" class="panel-card hidden">
@@ -833,6 +883,10 @@
       <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3z"/></svg>
       الإدارة
     </button>
+    <button id="nav-activity" class="nav-item" onclick="switchView('activity')">
+      <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+      النشاط <span id="activity-unread-badge" class="nav-count hidden">0</span>
+    </button>
     <button id="nav-auth" class="nav-item" onclick="switchView('auth')">
       <svg class="ic ic-20" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
       حسابي
@@ -840,7 +894,22 @@
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0"></script>
+
+  <!-- app.js السابق مقسّم إلى وحدات أصغر لسهولة الصيانة. ترتيب التحميل مهم لأن الدوال عامة (global) بين الملفات. -->
+  <script src="./js/config.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/router.js"></script>
+  <script src="./js/requests.js"></script>
+  <script src="./js/community.js"></script>
+  <script src="./js/filters.js"></script>
+  <script src="./js/map.js"></script>
+  <script src="./js/shops.js"></script>
+  <script src="./js/shop-modal.js"></script>
+  <script src="./js/owner.js"></script>
+  <script src="./js/admin.js"></script>
+  <script src="./js/notifications.js"></script>
+  <script src="./js/main.js"></script>
 </body>
 </html>
