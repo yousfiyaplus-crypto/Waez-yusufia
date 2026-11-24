@@ -249,6 +249,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }, { passive: false });
   await checkAuthSession();
   await loadInitialData();
+  updateDailyHub();
 
   sb.auth.onAuthStateChange(async (_event, session) => {
     currentUser = session?.user || null;
@@ -262,6 +263,26 @@ function installPWA() {
   deferredPrompt.prompt();
   deferredPrompt = null;
   document.getElementById('install-pwa-btn').classList.add('hidden');
+}
+
+// ===== بوابة ويز اليومية =====
+function scrollToPulse() {
+  const pulse = document.getElementById('community-pulse');
+  if (pulse && !pulse.classList.contains('hidden')) pulse.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  else showToast('ماكو تحديثات محلية منشورة حالياً.', 'info');
+}
+
+function focusDirectory() {
+  document.getElementById('search-input')?.focus();
+  document.getElementById('search-input')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function updateDailyHub() {
+  const greeting = document.getElementById('daily-greeting');
+  if (!greeting) return;
+  const hour = new Date().getHours();
+  const timeGreeting = hour < 12 ? 'صباح الخير، شنو نكتشف اليوم؟' : hour < 18 ? 'نهارك سعيد، شنو تحتاج اليوم؟' : 'مساء الخير، شنو جديد اليوسفية؟';
+  greeting.textContent = currentProfile?.full_name ? `هلا ${currentProfile.full_name.split(' ')[0]}، ${timeGreeting}` : timeGreeting;
 }
 
 // ===== التنقل =====
@@ -305,6 +326,7 @@ async function loadCurrentProfile() {
 }
 
 function updateAuthUI() {
+  updateDailyHub();
   const badge = document.getElementById('header-user-badge');
   const navAdmin = document.getElementById('nav-admin');
   const authForms = document.getElementById('auth-forms-card');

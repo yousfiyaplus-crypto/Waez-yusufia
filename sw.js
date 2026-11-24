@@ -1,4 +1,4 @@
-const CACHE_NAME = 'waez-yusufiya-v2';
+const CACHE_NAME = 'waez-yusufiya-v3';
 const APP_SHELL = ['./', './index.html', './app.js', './manifest.json'];
 
 self.addEventListener('install', (event) => {

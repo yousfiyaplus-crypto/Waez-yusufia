@@ -381,6 +381,26 @@
     @media (min-width:650px) { .home-hero { padding:28px 30px 20px; } .hero-stats { max-width:390px; } .cards-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; } .shop-card { min-width:0; } }
     @media (max-width:380px) { .home-hero { padding:19px 16px 15px; } .hero-stats { gap:10px; } .hero-stats span { font-size:.61rem; } .hero-actions button { padding:8px 11px; } }
 
+    .daily-hub { margin:0 0 24px; padding:15px; border:1px solid var(--border); border-radius:22px; background:linear-gradient(145deg,#fff 0%,#fbfaf5 100%); box-shadow:0 8px 22px rgba(17,24,39,.045); }
+    .daily-hub-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 1px 13px; }
+    .daily-hub-head h2 { margin:2px 0 0; font-size:1.12rem; font-weight:900; }
+    .hub-live { display:inline-flex; align-items:center; gap:6px; padding:6px 9px; border-radius:99px; color:#176b3a; background:#e8f7ed; font-size:.68rem; font-weight:800; white-space:nowrap; }
+    .hub-live i { width:7px; height:7px; border-radius:50%; background:#22c55e; box-shadow:0 0 0 4px rgba(34,197,94,.12); }
+    .daily-hub-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+    .hub-tile { position:relative; display:flex; flex-direction:column; align-items:flex-start; min-height:112px; padding:12px; border:1px solid var(--border); border-radius:16px; text-align:right; background:#fff; color:var(--text); cursor:pointer; transition:transform .16s ease,box-shadow .16s ease; }
+    .hub-tile:active { transform:scale(.98); }
+    .hub-icon { display:grid; place-items:center; width:30px; height:30px; margin-bottom:8px; border-radius:10px; background:#fff5d6; color:#9b7100; font-size:1.25rem; font-weight:900; }
+    .hub-tile strong { font-size:.88rem; font-weight:900; }
+    .hub-tile small { margin-top:3px; color:var(--text-muted); font-size:.69rem; }
+    .hub-arrow { position:absolute; left:12px; bottom:12px; color:#b38a12; font-size:1rem; }
+    .hub-pulse { border-color:#f1d7d7; background:linear-gradient(145deg,#fff,#fff8f8); }
+    .hub-pulse .hub-icon { background:#fff0f0; color:#c62828; }
+    .hub-service .hub-icon { background:#eaf7ee; color:#16834a; }
+    .hub-project .hub-icon { background:#eef1ff; color:#4f5bb5; }
+    .hub-public-note { display:flex; align-items:center; gap:7px; margin:12px 2px 0; color:var(--text-muted); font-size:.7rem; }
+    .hub-public-note span { color:#b38a12; }
+    @media (min-width:650px) { .daily-hub-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } .hub-tile { min-height:125px; } }
+
     .pulse-section { margin:0 0 22px; }
     .pulse-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 2px 9px; }
     .pulse-heading h2 { margin:1px 0 0; font-size:1.04rem; font-weight:900; }
@@ -419,7 +439,7 @@
       <img src="./logo.png" alt="ويز اليوسفية" onerror="this.style.display='none'" />
       <div>
         <div class="brand-title">ويز <span>اليوسفية</span></div>
-        <div class="brand-sub">الدليل والخريطة التفاعلية للمنطقة</div>
+        <div class="brand-sub">منطقتك.. مجتمع وخدمات وحياة يومية</div>
       </div>
     </div>
     <div class="header-actions">
@@ -451,6 +471,20 @@
         <i></i>
         <div><strong>24/7</strong><span>دليلك متاح</span></div>
       </div>
+    </section>
+
+    <section class="daily-hub" aria-label="بوابة ويز اليومية">
+      <div class="daily-hub-head">
+        <div><span class="eyebrow">كل يوم أقرب لمنطقتك</span><h2 id="daily-greeting">شنو نكتشف اليوم؟</h2></div>
+        <span class="hub-live"><i></i> مساحة اليوسفية</span>
+      </div>
+      <div class="daily-hub-grid">
+        <button class="hub-tile hub-pulse" onclick="scrollToPulse()"><span class="hub-icon">◉</span><strong>نبض اليوسفية</strong><small>أخبار وتنبيهات وعروض</small><span class="hub-arrow">←</span></button>
+        <button class="hub-tile hub-discover" onclick="focusDirectory()"><span class="hub-icon">⌕</span><strong>اكتشف الأماكن</strong><small>محلات وخدمات قريبة</small><span class="hub-arrow">←</span></button>
+        <button class="hub-tile hub-service" onclick="switchView('request')"><span class="hub-icon">＋</span><strong>اطلب خدمة</strong><small>نوصلك بمقدم مناسب</small><span class="hub-arrow">←</span></button>
+        <button class="hub-tile hub-project" onclick="switchView('owner')"><span class="hub-icon">▦</span><strong>مشروعي</strong><small>أضف مشروعك أو أدره</small><span class="hub-arrow">←</span></button>
+      </div>
+      <div class="hub-public-note"><span>✦</span> التصفح متاح للجميع، والحساب مطلوب للطلبات والتفاعل.</div>
     </section>
 
     <section id="community-pulse" class="pulse-section hidden" aria-label="آخر تحديثات اليوسفية">
@@ -785,7 +819,7 @@
   <nav class="bottom-nav">
     <button id="nav-home" class="nav-item active" onclick="switchView('home')">
       <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M9 4L3 6v15l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v15M15 6v15"/></svg>
-      الدليل
+      الرئيسية
     </button>
     <button id="nav-request" class="nav-item" onclick="switchView('request')">
       <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="9"/></svg>
