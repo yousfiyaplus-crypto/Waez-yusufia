@@ -98,7 +98,7 @@ let searchDebounceTimer = null;
 function onSearchInput() {
   toggleSearchClearBtn();
   clearTimeout(searchDebounceTimer);
-  searchDebounceTimer = setTimeout(renderShops, 150);
+  searchDebounceTimer = setTimeout(() => { mapFitPending = true; renderShops(); }, 150);
 }
 
 function toggleSearchClearBtn() {
@@ -125,6 +125,7 @@ function clearAllFilters() {
     btn.classList.remove('active', 'active-gold', 'active-red');
   });
   renderCategoryPills();
+  mapFitPending = true;
   renderShops();
 }
 

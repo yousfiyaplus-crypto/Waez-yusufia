@@ -37,21 +37,24 @@ function renderShops() {
   // تحديث الخريطة
   if (mainMarkersLayer) {
     mainMarkersLayer.clearLayers();
-    if (userCoords) {
-      L.circleMarker([userCoords.lat, userCoords.lng], {
-        radius: 8, color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.9
-      }).bindPopup('موقعك الحالي').addTo(mainMarkersLayer);
-    }
+    mapShopIndex = Object.fromEntries(list.map(s => [s.id, s]));
+    meLayer.clearLayers();
+    if (userCoords) L.marker([userCoords.lat, userCoords.lng], { icon: meIcon(), interactive: false, keyboard: false }).addTo(meLayer);
     let mapPinsCount = 0;
+    const pts = [];
     if (mapEnabledSetting) {
       list.forEach(s => {
         if (s.show_on_map && s.lat && s.lng) {
           mapPinsCount++;
-          const m = L.marker([s.lat, s.lng]).addTo(mainMarkersLayer);
-          m.bindPopup(`<b>${escapeHtml(s.name)}</b><br>${escapeHtml(s.openInfo.label)}<br><button onclick="openShopModal('${s.id}')" style="margin-top:4px;cursor:pointer;">عرض التفاصيل</button>`);
+          pts.push([s.lat, s.lng]);
+          L.marker([s.lat, s.lng], { icon: shopPin(s, catMap[s.category_id]), title: s.name, riseOnHover: true })
+            .on('click', (e) => showMapPreview(s.id, e.target)).addTo(mainMarkersLayer);
         }
       });
     }
+    if (mapFitPending && pts.length) mainMap.fitBounds(pts, { padding: [44, 44], maxZoom: 16 });
+    mapFitPending = false;
+    hideMapPreview();
     document.getElementById('shops-count').textContent = `${mapPinsCount} على الخريطة | ${list.length} إجمالي`;
   } else {
     const countEl = document.getElementById('shops-count');
@@ -86,7 +89,7 @@ function renderShops() {
               ${s.plan === 'gold' ? `<span class="badge badge-gold">${ICONS.star(true)} مميز</span>` : ''}
             </div>
             <div class="shop-meta">
-              ${escapeHtml(cat.icon)} ${escapeHtml(cat.name)} <span class="sep">•</span> ${ICONS.pin} ${escapeHtml(s.area_text)}
+              <span class="cat-chip">${catIcon(cat, 14)} ${escapeHtml(cat.name)}</span> <span class="sep">•</span> ${ICONS.pin} ${escapeHtml(s.area_text)}
               ${s.dist != null ? ` <span class="sep">•</span> <b>يبعد ${formatDistance(s.dist)}</b>` : ''}
               ${!s.show_on_map ? ' (موقع خاص/متنقل)' : ''}
             </div>
@@ -116,7 +119,7 @@ function toggleFav(shopId) {
   if (!nowFav) favorites = favorites.filter(id => id !== shopId);
   else favorites.push(shopId);
   localStorage.setItem('yp_favs', JSON.stringify(favorites));
-  openShopModal(shopId).then(() => {
+  openShopModal(shopId, { silent: true }).then(() => {
     if (!nowFav) return;
     const btn = document.querySelector('#modal-shop-body button[onclick*="toggleFav"]');
     if (btn && btn.animate) {

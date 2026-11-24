@@ -99,7 +99,7 @@ function initPickerMap(lat, lng) {
   const center = (lat && lng) ? [lat, lng] : YUSUFIYA_CENTER;
   if (!pickerMap) {
     pickerMap = L.map('picker-map').setView(center, 14);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(pickerMap);
+    makeTiles('light').addTo(pickerMap);
     pickerMap.on('click', (e) => setPickerPin(e.latlng.lat, e.latlng.lng));
   } else {
     pickerMap.setView(center, 14);
@@ -114,7 +114,7 @@ function setPickerPin(lat, lng) {
   document.getElementById('f-lng').value = lng.toFixed(6);
   document.getElementById('coords-label').innerHTML = `${ICONS.check} تم تثبيت الموقع (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
   if (pickerMarker) pickerMarker.setLatLng([lat, lng]);
-  else pickerMarker = L.marker([lat, lng]).addTo(pickerMap);
+  else pickerMarker = L.marker([lat, lng], { icon: shopPin({ plan: 'gold' }, {}) }).addTo(pickerMap);
 }
 
 function pickCurrentGPS() {

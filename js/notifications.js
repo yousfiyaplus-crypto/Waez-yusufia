@@ -30,7 +30,7 @@ async function loadActivityCenter() {
   const unread = rows.filter(n => !n.read_at).length;
   if (summary) summary.textContent = `${rows.length} تحديث · ${unread} غير مقروء`;
   list.innerHTML = rows.map(n => {
-    const icon = n.type === 'alert' ? '!' : n.type === 'service' ? '↗' : '●';
+    const icon = ico(n.type === 'alert' ? 'warn' : n.type === 'service' ? 'arrowUR' : 'bell', 18);
     return `<article class="activity-item ${n.read_at ? '' : 'unread'}"><div class="activity-icon">${icon}</div><div style="flex:1;min-width:0"><strong>${escapeHtml(n.title)}</strong><p>${escapeHtml(n.body)}</p><small>${new Date(n.created_at).toLocaleString('ar-IQ')}</small>${n.read_at || !n.user_id ? '' : `<div style="margin-top:8px"><button class="btn btn-outline btn-sm" onclick="markNotificationRead('${n.id}')">تمييز كمقروء</button></div>`}</div></article>`;
   }).join('') || '<div class="panel-card">ما عندك إشعارات حالياً. من يصير تحديث يخصك راح يظهر هنا.</div>';
   await refreshNotificationBadge();

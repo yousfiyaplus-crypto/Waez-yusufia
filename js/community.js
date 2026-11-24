@@ -29,7 +29,7 @@ function renderCommunityPosts() {
   }
   wrap.innerHTML = visiblePosts.map(post => {
     const kind = ['news','offer','alert'].includes(post.kind) ? post.kind : 'news';
-    const symbol = kind === 'offer' ? '٪' : kind === 'alert' ? '!' : '●';
+    const symbol = ico(kind === 'offer' ? 'percent' : kind === 'alert' ? 'warn' : 'news', 18);
     const label = kind === 'offer' ? 'عرض تجاري' : kind === 'alert' ? 'تنبيه مهم' : 'خبر محلي';
     const date = post.created_at ? new Date(post.created_at).toLocaleDateString('ar-IQ',{day:'numeric',month:'short'}) : '';
     const expiry = post.expires_at ? new Date(post.expires_at) : null;

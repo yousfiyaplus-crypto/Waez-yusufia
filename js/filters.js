@@ -3,7 +3,7 @@ function renderCategoryPills() {
   const wrap = document.getElementById('category-pills');
   let html = `<button class="pill ${selectedCategory === 'all' ? 'active' : ''}" onclick="selectCategory('all')">الكل</button>`;
   categories.forEach(c => {
-    html += `<button class="pill ${selectedCategory === c.id ? 'active' : ''}" onclick="selectCategory(${c.id})">${escapeHtml(c.icon)} ${escapeHtml(c.name)}</button>`;
+    html += `<button class="pill ${selectedCategory === c.id ? 'active' : ''}" onclick="selectCategory(${c.id})">${catIcon(c, 15)} ${escapeHtml(c.name)}</button>`;
   });
   wrap.innerHTML = html;
 }
@@ -11,17 +11,17 @@ function renderCategoryPills() {
 function populateCategorySelect() {
   const sel = document.getElementById('f-category');
   if (!sel) return;
-  sel.innerHTML = categories.map(c => `<option value="${c.id}">${escapeHtml(c.icon)} ${escapeHtml(c.name)}</option>`).join('');
+  sel.innerHTML = categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
 }
 
 function selectCategory(catId) {
-  selectedCategory = catId;
+  selectedCategory = catId; mapFitPending = true;
   renderCategoryPills();
   renderShops();
 }
 
 function toggleQuickFilter(key) {
-  quickFilters[key] = !quickFilters[key];
+  quickFilters[key] = !quickFilters[key]; mapFitPending = true;
   const btn = document.getElementById(`filter-${key}`);
   if (key === 'open') btn.classList.toggle('active', quickFilters.open);
   if (key === 'verified') btn.classList.toggle('active-gold', quickFilters.verified);

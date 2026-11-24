@@ -1,7 +1,7 @@
-const CACHE_NAME = 'waez-yusufiya-v5';
+const CACHE_NAME = 'waez-yusufiya-v6';
 const APP_SHELL = [
   './', './index.html', './manifest.json',
-  './js/config.js', './js/utils.js', './js/auth.js', './js/router.js',
+  './js/config.js', './js/icons.js', './icon.svg', './js/utils.js', './js/auth.js', './js/router.js',
   './js/requests.js', './js/community.js', './js/filters.js', './js/map.js',
   './js/shops.js', './js/shop-modal.js', './js/owner.js', './js/admin.js',
   './js/notifications.js', './js/main.js',

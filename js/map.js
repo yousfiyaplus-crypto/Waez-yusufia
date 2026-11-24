@@ -1,11 +1,73 @@
-// js/map.js — تهيئة خريطة Leaflet الرئيسية ورسم المسارات.
+// js/map.js — خريطة ويز: طبقة داكنة، دبابيس SVG حسب القسم، تجميع، بطاقة معاينة، ومسار.
+const TILE_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+const TILE_URLS = {
+  dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  light: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+};
+let meLayer = null, tileLayerRef = null, mapStyle = 'dark', mapShopIndex = {}, mapFitPending = true;
+
+function makeTiles(style) {
+  return L.tileLayer(TILE_URLS[style] || TILE_URLS.light, { attribution: TILE_ATTR, subdomains: 'abcd', maxZoom: 19 });
+}
+
 function initMainMap() {
-  mainMap = L.map('main-map').setView(YUSUFIYA_CENTER, 13);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap'
-  }).addTo(mainMap);
-  mainMarkersLayer = L.layerGroup().addTo(mainMap);
+  try { if (localStorage.getItem('yp_map_style') === 'light') mapStyle = 'light'; } catch (_) {}
+  mainMap = L.map('main-map').setView(YUSUFIYA_CENTER, 14);
+  tileLayerRef = makeTiles(mapStyle).addTo(mainMap);
+  mainMarkersLayer = (L.markerClusterGroup
+    ? L.markerClusterGroup({
+        showCoverageOnHover: false, maxClusterRadius: 46,
+        iconCreateFunction: c => L.divIcon({ className: 'yp-cluster-wrap', iconSize: [42, 42], html: `<div class="yp-cluster">${c.getChildCount()}</div>` }),
+      })
+    : L.layerGroup()).addTo(mainMap);
+  meLayer = L.layerGroup().addTo(mainMap);
   routeLayer = L.layerGroup().addTo(mainMap);
+  mainMap.on('click', hideMapPreview);
+  document.getElementById('tool-style')?.classList.toggle('on', mapStyle === 'light');
+}
+
+function toggleMapStyle() {
+  mapStyle = mapStyle === 'dark' ? 'light' : 'dark';
+  try { localStorage.setItem('yp_map_style', mapStyle); } catch (_) {}
+  mainMap.removeLayer(tileLayerRef);
+  tileLayerRef = makeTiles(mapStyle).addTo(mainMap);
+  tileLayerRef.bringToBack();
+  document.getElementById('tool-style')?.classList.toggle('on', mapStyle === 'light');
+}
+
+function fitMapToShops() {
+  const pts = Object.values(mapShopIndex).filter(s => s.show_on_map && s.lat && s.lng).map(s => [s.lat, s.lng]);
+  if (pts.length) mainMap.fitBounds(pts, { padding: [44, 44], maxZoom: 16 });
+  else mainMap.setView(YUSUFIYA_CENTER, 14);
+}
+
+// بطاقة معاينة تظهر فوق الخريطة عند لمس أي دبوس
+function showMapPreview(id, marker) {
+  const s = mapShopIndex[id];
+  const el = document.getElementById('map-preview');
+  if (!s || !el) return;
+  const cat = categories.find(c => c.id === s.category_id) || {};
+  document.querySelectorAll('.yp-pin.sel').forEach(n => n.classList.remove('sel'));
+  marker?._icon?.querySelector('.yp-pin')?.classList.add('sel');
+  el.innerHTML = `
+    <img src="${safeImageUrl(s.image_url)}" alt="" />
+    <div class="mp-body">
+      <strong>${escapeHtml(s.name)}</strong>
+      <span class="mp-meta">${catIcon(cat, 13)} ${escapeHtml(cat.name || '')}${s.dist != null ? ` <span class="sep">•</span> ${formatDistance(s.dist)}` : ''}</span>
+      <span class="badge ${s.openInfo.cls}"><span class="dot"></span> ${escapeHtml(s.openInfo.label)}</span>
+    </div>
+    <div class="mp-actions">
+      <button type="button" class="btn btn-gold btn-sm" onclick="openShopModal('${s.id}')">التفاصيل</button>
+      <button type="button" class="mp-ic" onclick="showRouteInApp('${s.id}')" aria-label="المسار">${ico('route', 17)}</button>
+      <a class="mp-ic" href="tel:${cleanPhone(s.phone)}" onclick="trackMetric('${s.id}','click')" aria-label="اتصال">${ico('phone', 17)}</a>
+    </div>
+    <button type="button" class="mp-x" onclick="hideMapPreview()" aria-label="إغلاق">${ico('x', 14)}</button>`;
+  el.classList.remove('hidden');
+}
+
+function hideMapPreview() {
+  document.getElementById('map-preview')?.classList.add('hidden');
+  document.querySelectorAll('.yp-pin.sel').forEach(n => n.classList.remove('sel'));
 }
 
 async function showRouteInApp(shopId) {
@@ -13,6 +75,7 @@ async function showRouteInApp(shopId) {
   if (!shop || !shop.lat || !shop.lng) return;
   trackMetric(shopId, 'click');
   closeShopModal();
+  hideMapPreview();
   switchView('home');
 
   const mapWrap = document.getElementById('map-wrapper');
@@ -24,16 +87,14 @@ async function showRouteInApp(shopId) {
   const extBtn = document.getElementById('route-ext-btn');
   extBtn.href = `https://www.google.com/maps/dir/?api=1&destination=${shop.lat},${shop.lng}`;
   routeBar.classList.remove('hidden');
+  const cat = categories.find(c => c.id === shop.category_id);
+  const destPin = () => L.marker([shop.lat, shop.lng], { icon: shopPin({ ...shop, openInfo: getOpenStatus(shop) }, cat), interactive: false });
 
   const drawWithUser = async (coords) => {
     if (routeLayer) routeLayer.clearLayers();
     routeText.textContent = `جاري رسم المسار إلى ${shop.name}...`;
-
-    L.circleMarker([coords.lat, coords.lng], {
-      radius: 8, color: '#0d0f14', fillColor: '#16a34a', fillOpacity: 1
-    }).bindPopup('موقعك الحالي').addTo(routeLayer);
-
-    L.marker([shop.lat, shop.lng]).bindPopup(escapeHtml(shop.name)).addTo(routeLayer);
+    L.marker([coords.lat, coords.lng], { icon: meIcon(), interactive: false }).addTo(routeLayer);
+    destPin().addTo(routeLayer);
 
     try {
       const url = `https://router.project-osrm.org/route/v1/driving/${coords.lng},${coords.lat};${shop.lng},${shop.lat}?overview=full&geometries=geojson`;
@@ -41,8 +102,9 @@ async function showRouteInApp(shopId) {
       const data = await res.json();
       if (data.code === 'Ok' && data.routes?.length) {
         const r = data.routes[0];
-        const line = L.geoJSON(r.geometry, { style: { color: '#2563eb', weight: 5, opacity: 0.9 } }).addTo(routeLayer);
-        mainMap.fitBounds(line.getBounds(), { padding: [35, 35] });
+        L.geoJSON(r.geometry, { style: { color: '#0d0f14', weight: 10, opacity: 0.55 } }).addTo(routeLayer);
+        const line = L.geoJSON(r.geometry, { style: { color: '#f5b800', weight: 5, opacity: 1 } }).addTo(routeLayer);
+        mainMap.fitBounds(line.getBounds(), { padding: [45, 45] });
         const km = (r.distance / 1000).toFixed(1);
         const mins = Math.max(1, Math.round(r.duration / 60));
         routeText.textContent = `إلى ${shop.name}: ${km} كم (~${mins} دقيقة)`;
@@ -51,9 +113,9 @@ async function showRouteInApp(shopId) {
     } catch (_) {}
 
     const fallbackLine = L.polyline([[coords.lat, coords.lng], [shop.lat, shop.lng]], {
-      color: '#2563eb', weight: 4, dashArray: '8, 8'
+      color: '#f5b800', weight: 4, dashArray: '8, 8'
     }).addTo(routeLayer);
-    mainMap.fitBounds(fallbackLine.getBounds(), { padding: [35, 35] });
+    mainMap.fitBounds(fallbackLine.getBounds(), { padding: [45, 45] });
     const d = calcDistanceKm(coords.lat, coords.lng, shop.lat, shop.lng);
     routeText.textContent = `إلى ${shop.name} (يبعد ${formatDistance(d)})`;
   };
@@ -73,6 +135,7 @@ async function showRouteInApp(shopId) {
       },
       () => {
         if (routeLayer) routeLayer.clearLayers();
+        destPin().addTo(routeLayer);
         mainMap.setView([shop.lat, shop.lng], 16);
         routeText.textContent = `موقع ${shop.name} (فعّل الـ GPS لرسم الطريق من مكانك)`;
       }
@@ -98,8 +161,7 @@ function toggleMapFullscreen() {
   const mapCard = document.getElementById('map-wrapper');
   const opened = mapCard.classList.toggle('map-fullscreen');
   document.body.classList.toggle('map-open', opened);
-  const btn = mapCard.querySelector('.map-expand-btn');
-  if (btn) btn.textContent = opened ? '✕ إغلاق' : '⛶ تكبير';
+  const btn = document.getElementById('tool-full');
+  if (btn) btn.innerHTML = ico(opened ? 'shrink' : 'expand', 19);
   if (mainMap) setTimeout(() => mainMap.invalidateSize(), 220);
 }
-

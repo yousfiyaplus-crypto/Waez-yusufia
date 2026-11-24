@@ -1,8 +1,8 @@
 // js/shop-modal.js — نافذة تفاصيل المشروع، التقييمات، والإبلاغ عن تقييم مزيف.
-async function openShopModal(shopId) {
+async function openShopModal(shopId, opts = {}) {
   const shop = allShops.find(s => s.id === shopId);
   if (!shop) return;
-  trackMetric(shopId, 'view');
+  if (!opts.silent) trackMetric(shopId, 'view');
 
   const openInfo = getOpenStatus(shop);
   const showDir = mapEnabledSetting && shop.show_on_map && shop.lat && shop.lng;

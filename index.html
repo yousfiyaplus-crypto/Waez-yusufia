@@ -17,10 +17,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="ويز اليوسفية" />
   <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="./icon.svg" />
   <link rel="apple-touch-icon" href="./logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -451,6 +453,54 @@
 
     .request-intro { background:linear-gradient(135deg,#fffdf4,#fff); border-color:#f0dfae; }
     .request-status { display:inline-flex; border-radius:99px; padding:3px 9px; font-size:.68rem; font-weight:800; background:#eef2ff; color:#4338ca; }
+
+    /* ===== v3: خريطة الليل + أيقونات SVG ===== */
+    .map-card { position: relative; border-color: #1c2030; background: #0d0f14; }
+    #main-map { height: min(64vh, 460px); min-height: 340px; background: #0d0f14; filter: none; }
+    .leaflet-container { font-family: 'Cairo', sans-serif; background: #0d0f14; }
+    .leaflet-bar a, .leaflet-bar a:hover { background: #0d0f14; color: #f5b800; border-color: #262b38; }
+    .leaflet-control-attribution { background: rgba(13,15,20,.72) !important; color: #8d94a6 !important; font-size: 10px; }
+    .leaflet-control-attribution a { color: #c9a227 !important; }
+    .map-tools { position: absolute; z-index: 500; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 8px; }
+    .map-tools button { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; cursor: pointer; color: #f5b800; background: rgba(13,15,20,.84); border: 1px solid rgba(245,184,0,.35); backdrop-filter: blur(6px); box-shadow: 0 4px 12px rgba(0,0,0,.3); }
+    .map-tools button:active { transform: scale(.94); }
+    .map-tools button.on { background: #f5b800; color: #0d0f14; }
+    .map-preview { position: absolute; z-index: 500; left: 10px; right: 10px; bottom: 28px; display: flex; align-items: center; gap: 11px; padding: 10px; border-radius: 18px; background: rgba(255,255,255,.97); box-shadow: var(--shadow-lg); animation: sheet-up .2s ease-out; }
+    .map-preview img { width: 56px; height: 56px; border-radius: 13px; object-fit: cover; flex-shrink: 0; }
+    .mp-body { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+    .mp-body strong { max-width: 100%; font-size: .92rem; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mp-meta { display: flex; align-items: center; gap: 4px; font-size: .72rem; color: var(--text-muted); }
+    .mp-actions { display: flex; align-items: center; gap: 6px; }
+    .mp-ic { width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 11px; background: #f1f2f5; color: #13151a; cursor: pointer; }
+    .mp-x { position: absolute; top: -10px; left: -4px; width: 26px; height: 26px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #0d0f14; color: #fff; cursor: pointer; }
+    @media (max-width: 400px) { .map-preview img { display: none; } }
+    .map-card.map-fullscreen .map-preview { bottom: 34px; }
+    .yp-pin-wrap, .yp-cluster-wrap, .yp-me-wrap { background: none; border: 0; }
+    .yp-pin { position: relative; width: 38px; height: 38px; margin: 0 1px; display: grid; place-items: center; border-radius: 50%; color: #f5b800; background: #0d0f14; border: 2px solid #f5b800; box-shadow: 0 6px 14px rgba(0,0,0,.45); transform-origin: 50% 120%; transition: transform .15s; }
+    .yp-pin::after { content: ""; position: absolute; left: 50%; bottom: -8px; width: 10px; height: 10px; background: inherit; border-right: 2px solid #f5b800; border-bottom: 2px solid #f5b800; transform: translateX(-50%) rotate(45deg); }
+    .yp-pin::before { content: ""; position: absolute; top: -3px; right: -3px; z-index: 2; width: 11px; height: 11px; border-radius: 50%; background: #22c55e; border: 2px solid #0d0f14; }
+    .yp-pin.off { color: #9aa1b2; border-color: #6b7285; opacity: .85; }
+    .yp-pin.off::after { border-color: #6b7285; }
+    .yp-pin.off::before { background: #ef4444; }
+    .yp-pin.gold { color: #0d0f14; background: #f5b800; border-color: #fff3c4; animation: yp-ring 2.4s ease-out infinite; }
+    .yp-pin.gold::after { border-color: #fff3c4; }
+    .yp-pin.sel { transform: scale(1.2); }
+    @keyframes yp-ring { 0% { box-shadow: 0 6px 14px rgba(0,0,0,.45), 0 0 0 0 rgba(245,184,0,.55); } 100% { box-shadow: 0 6px 14px rgba(0,0,0,.45), 0 0 0 16px rgba(245,184,0,0); } }
+    .yp-cluster { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; color: #f5b800; background: radial-gradient(circle, #1d2232, #0d0f14); border: 2px solid #f5b800; font-weight: 900; font-size: .95rem; box-shadow: 0 0 0 6px rgba(245,184,0,.18), 0 6px 14px rgba(0,0,0,.4); }
+    .yp-me { width: 18px; height: 18px; border-radius: 50%; background: #38bdf8; border: 3px solid #fff; animation: yp-me 2s ease-out infinite; }
+    @keyframes yp-me { 0% { box-shadow: 0 0 0 0 rgba(56,189,248,.6); } 100% { box-shadow: 0 0 0 16px rgba(56,189,248,0); } }
+    .hub-icon { width: 38px; height: 38px; border-radius: 12px; margin-bottom: 10px; }
+    .hub-arrow, .hub-public-note span, .heading-mark, .hero-actions button span { display: inline-grid; place-items: center; }
+    .hub-arrow { color: #b38a12; }
+    .hub-public-note span { color: #b38a12; }
+    .pulse-refresh { display: inline-flex; align-items: center; gap: 5px; }
+    .pulse-symbol, .activity-icon { color: inherit; }
+    .cat-chip { display: inline-flex; align-items: center; gap: 4px; }
+    .pill .ic { opacity: .85; }
+    .nav-item { position: relative; }
+    .nav-item.active::before { content: ""; position: absolute; top: -7px; width: 26px; height: 3px; border-radius: 0 0 4px 4px; background: var(--brand-gold); }
+    .toast.info { background: #2b3140; }
+    @media (prefers-reduced-motion: reduce) { .yp-pin.gold, .yp-me, .view-enter, .modal-sheet, .map-preview { animation: none; } }
   </style>
 </head>
 <body>
@@ -482,8 +532,8 @@
       <h1>كل اليوسفية<br><span>أقرب إلك.</span></h1>
       <p>اكتشف المحلات والخدمات القريبة منك، وتأكد من أوقات الدوام قبل ما تطلع.</p>
       <div class="hero-actions">
-        <button class="hero-primary" onclick="document.getElementById('search-input').focus(); window.scrollTo({top:0,behavior:'smooth'});">ابدأ البحث <span>←</span></button>
-        <button class="hero-secondary" onclick="switchView('owner')">أضف مشروعك <span>＋</span></button>
+        <button class="hero-primary" onclick="document.getElementById('search-input').focus(); window.scrollTo({top:0,behavior:'smooth'});">ابدأ البحث <span data-ic="arrow" data-s="16"></span></button>
+        <button class="hero-secondary" onclick="switchView('owner')">أضف مشروعك <span data-ic="plus" data-s="16"></span></button>
       </div>
       <div class="hero-stats">
         <div><strong id="hero-shops-count">—</strong><span>مشروع مسجل</span></div>
@@ -500,16 +550,16 @@
         <span class="hub-live"><i></i> مساحة اليوسفية</span>
       </div>
       <div class="daily-hub-grid">
-        <button class="hub-tile hub-pulse" onclick="scrollToPulse()"><span class="hub-icon">◉</span><strong>نبض اليوسفية</strong><small>أخبار وتنبيهات وعروض</small><span class="hub-arrow">←</span></button>
-        <button class="hub-tile hub-discover" onclick="focusDirectory()"><span class="hub-icon">⌕</span><strong>اكتشف الأماكن</strong><small>محلات وخدمات قريبة</small><span class="hub-arrow">←</span></button>
-        <button class="hub-tile hub-service" onclick="switchView('request')"><span class="hub-icon">＋</span><strong>اطلب خدمة</strong><small>نوصلك بمقدم مناسب</small><span class="hub-arrow">←</span></button>
-        <button class="hub-tile hub-project" onclick="switchView('owner')"><span class="hub-icon">▦</span><strong>مشروعي</strong><small>أضف مشروعك أو أدره</small><span class="hub-arrow">←</span></button>
+        <button class="hub-tile hub-pulse" onclick="scrollToPulse()"><span class="hub-icon" data-ic="radio" data-s="20"></span><strong>نبض اليوسفية</strong><small>أخبار وتنبيهات وعروض</small><span class="hub-arrow" data-ic="arrow" data-s="16"></span></button>
+        <button class="hub-tile hub-discover" onclick="focusDirectory()"><span class="hub-icon" data-ic="search" data-s="20"></span><strong>اكتشف الأماكن</strong><small>محلات وخدمات قريبة</small><span class="hub-arrow" data-ic="arrow" data-s="16"></span></button>
+        <button class="hub-tile hub-service" onclick="switchView('request')"><span class="hub-icon" data-ic="plus" data-s="20"></span><strong>اطلب خدمة</strong><small>نوصلك بمقدم مناسب</small><span class="hub-arrow" data-ic="arrow" data-s="16"></span></button>
+        <button class="hub-tile hub-project" onclick="switchView('owner')"><span class="hub-icon" data-ic="store" data-s="20"></span><strong>مشروعي</strong><small>أضف مشروعك أو أدره</small><span class="hub-arrow" data-ic="arrow" data-s="16"></span></button>
       </div>
-      <div class="hub-public-note"><span>✦</span> التصفح متاح للجميع، والحساب مطلوب للطلبات والتفاعل.</div>
+      <div class="hub-public-note"><span data-ic="shield" data-s="15"></span> التصفح متاح للجميع، والحساب مطلوب للطلبات والتفاعل.</div>
     </section>
 
     <section id="community-pulse" class="pulse-section hidden" aria-label="آخر تحديثات اليوسفية">
-      <div class="pulse-heading"><div><span class="eyebrow">منطقتك أولاً</span><h2>نبض اليوسفية</h2></div><div class="pulse-tools"><span class="pulse-live">تحديثات محلية</span><button type="button" class="pulse-refresh" onclick="loadCommunityPosts()" aria-label="تحديث النبض">↻ تحديث</button></div></div>
+      <div class="pulse-heading"><div><span class="eyebrow">منطقتك أولاً</span><h2>نبض اليوسفية</h2></div><div class="pulse-tools"><span class="pulse-live">تحديثات محلية</span><button type="button" class="pulse-refresh" onclick="loadCommunityPosts()" aria-label="تحديث النبض"><span data-ic="refresh" data-s="14"></span> تحديث</button></div></div>
       <div id="community-post-filters" class="pulse-filters" role="group" aria-label="تصفية التحديثات">
         <button type="button" class="pulse-filter active" data-community-filter="all" onclick="setCommunityFilter('all')">الكل</button>
         <button type="button" class="pulse-filter" data-community-filter="news" onclick="setCommunityFilter('news')">أخبار</button>
@@ -521,7 +571,7 @@
 
     <div class="section-heading">
       <div><span class="eyebrow">اكتشف المنطقة</span><h2>شنو تحتاج اليوم؟</h2></div>
-      <span class="heading-mark">YP</span>
+      <span class="heading-mark" data-ic="pin" data-s="19"></span>
     </div>
     <div class="search-box">
       <svg class="ic ic-18" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -561,10 +611,17 @@
     </div>
     <div id="map-wrapper" class="map-card">
       <div id="main-map"></div>
+      <div class="map-tools">
+        <button type="button" onclick="requestUserLocation()" aria-label="موقعي" title="موقعي" data-ic="locate" data-s="19"></button>
+        <button type="button" onclick="fitMapToShops()" aria-label="عرض كل المشاريع" title="عرض الكل" data-ic="fit" data-s="19"></button>
+        <button type="button" id="tool-style" onclick="toggleMapStyle()" aria-label="تبديل نمط الخريطة" title="نمط الخريطة" data-ic="layers" data-s="19"></button>
+        <button type="button" id="tool-full" onclick="toggleMapFullscreen()" aria-label="تكبير الخريطة" title="تكبير" data-ic="expand" data-s="19"></button>
+      </div>
+      <div id="map-preview" class="map-preview hidden" aria-live="polite"></div>
       <div class="map-bar">
         <span class="row"><svg class="ic ic-16" viewBox="0 0 24 24"><path d="M9 4L3 6v15l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v15M15 6v15"/></svg> المشاريع الظاهرة على الخريطة</span>
         <span id="shops-count" style="font-weight:700;">جاري التحميل...</span>
-        <button type="button" class="map-expand-btn" onclick="toggleMapFullscreen()" aria-label="تكبير الخريطة">⛶ تكبير</button>
+        
       </div>
       <div id="route-bar" class="map-bar hidden" style="background:var(--brand-dark);color:#fff;border-top:2px solid var(--brand-gold);">
         <span id="route-info-text" style="font-weight:700;"></span>
@@ -894,10 +951,12 @@
   </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0"></script>
 
   <!-- app.js السابق مقسّم إلى وحدات أصغر لسهولة الصيانة. ترتيب التحميل مهم لأن الدوال عامة (global) بين الملفات. -->
   <script src="./js/config.js"></script>
+  <script src="./js/icons.js"></script>
   <script src="./js/utils.js"></script>
   <script src="./js/auth.js"></script>
   <script src="./js/router.js"></script>
