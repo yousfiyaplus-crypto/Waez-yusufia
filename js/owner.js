@@ -22,7 +22,7 @@ async function renderOwnerSection() {
   listEl.innerHTML = myShops.map(s => {
     const views = Number(s.views_count) || 0;
     const clicks = Number(s.clicks_count) || 0;
-    const rate = views > 0 ? Math.min(100, Math.round((clicks / views) * 100)) : 0;
+    const openNow = getOpenStatus(s);
     const rev = reviewsSummary[s.id];
     const rating = rev ? (rev.sum / rev.count).toFixed(1) : '—';
     const revCount = rev ? rev.count : 0;
@@ -40,7 +40,7 @@ async function renderOwnerSection() {
       <div class="stat-grid" aria-label="إحصائيات المشروع">
         <div class="stat-tile"><span class="stat-ic">${ICONS.eye}</span><b>${views.toLocaleString('ar-IQ')}</b><small>زيارة</small></div>
         <div class="stat-tile"><span class="stat-ic">${ICONS.tap}</span><b>${clicks.toLocaleString('ar-IQ')}</b><small>تواصل</small></div>
-        <div class="stat-tile"><span class="stat-ic">${ICONS.check}</span><b>${rate.toLocaleString('ar-IQ')}٪</b><small>نسبة التواصل</small></div>
+        <div class="stat-tile"><span class="stat-ic">${ICONS.clock}</span><b style="font-size:.95rem">${escapeHtml(openNow.label)}</b><small>الحالة الحالية</small></div>
         <div class="stat-tile"><span class="stat-ic">${ICONS.star(true)}</span><b>${rating}</b><small>${revCount ? revCount.toLocaleString('ar-IQ') + ' تقييم' : 'لا تقييمات'}</small></div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">

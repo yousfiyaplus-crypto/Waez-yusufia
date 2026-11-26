@@ -105,7 +105,7 @@ async function showRouteInApp(shopId) {
         mainMap.fitBounds(line.getBounds(), { padding: [45, 45] });
         const km = (r.distance / 1000).toFixed(1);
         const mins = Math.max(1, Math.round(r.duration / 60));
-        routeText.textContent = `إلى ${shop.name}: ${km} كم (~${mins} دقيقة)`;
+        routeText.textContent = `إلى ${shop.name} — ${km} كم، حوالي ${mins} دقيقة`;
         return;
       }
     } catch (_) {}
@@ -115,7 +115,7 @@ async function showRouteInApp(shopId) {
     }).addTo(routeLayer);
     mainMap.fitBounds(fallbackLine.getBounds(), { padding: [45, 45] });
     const d = calcDistanceKm(coords.lat, coords.lng, shop.lat, shop.lng);
-    routeText.textContent = `إلى ${shop.name} (يبعد ${formatDistance(d)})`;
+    routeText.textContent = `إلى ${shop.name} — يبعد ${formatDistance(d)}`;
   };
 
   if (userCoords) {
