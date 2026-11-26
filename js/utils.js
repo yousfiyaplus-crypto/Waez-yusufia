@@ -22,10 +22,18 @@ function formatWhatsApp(num) {
 }
 
 function safeImageUrl(url) {
-  if (url && (url.startsWith('https://') || url.startsWith('http://'))) return url;
+  // يُستخدم داخل src="..." لذلك نهرّب الناتج، ونسمح بـ https فقط.
+  if (typeof url === 'string' && /^https:\/\/[^\s"'<>]+$/i.test(url)) return escapeHtml(url);
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="100%" height="100%" fill="#0d0f14"/><path d="M60 95l8-25h64l8 25" stroke="#f5b800" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M68 120v40h64v-40" stroke="#f5b800" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M88 160v-22h24v22" stroke="#f5b800" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>'
   );
+}
+
+// بطاقات هيكلية (Skeleton) لحالات التحميل
+function skeletonCards(n = 3) {
+  return Array.from({ length: n }, () =>
+    '<div class="panel-card sk-panel" aria-hidden="true"><div class="sk sk-line w60"></div><div class="sk sk-line w80"></div><div class="sk sk-line w40"></div></div>'
+  ).join('');
 }
 
 function showMsg(elId, text, isOk = true) {
@@ -40,7 +48,10 @@ function showToast(message, type = 'ok', duration = 2800) {
   if (!host) return;
   const t = document.createElement('div');
   t.className = `toast ${type}`;
-  t.innerHTML = message;
+  t.setAttribute('role', type === 'err' ? 'alert' : 'status');
+  // الأيقونة الأولى (SVG موثوق من ICONS) تبقى كما هي، وباقي النص يُهرَّب لأنه قد يحوي رسائل أخطاء خارجية.
+  const m = String(message).match(/^(\s*<svg[\s\S]*?<\/svg>)?([\s\S]*)$/);
+  t.innerHTML = (m[1] || '') + escapeHtml(m[2]);
   host.appendChild(t);
   requestAnimationFrame(() => t.classList.add('show'));
   setTimeout(() => {

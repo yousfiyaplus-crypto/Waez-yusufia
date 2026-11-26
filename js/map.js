@@ -55,11 +55,11 @@ function showMapPreview(id, marker) {
       <span class="badge ${s.openInfo.cls}"><span class="dot"></span> ${escapeHtml(s.openInfo.label)}</span>
     </div>
     <div class="mp-actions">
-      <button type="button" class="btn btn-gold btn-sm" onclick="openShopModal('${s.id}')">التفاصيل</button>
-      <button type="button" class="mp-ic" onclick="showRouteInApp('${s.id}')" aria-label="المسار">${ico('route', 17)}</button>
-      <a class="mp-ic" href="tel:${cleanPhone(s.phone)}" onclick="trackMetric('${s.id}','click')" aria-label="اتصال">${ico('phone', 17)}</a>
+      <button type="button" class="btn btn-gold btn-sm" ${act('openShopModal', s.id)}>التفاصيل</button>
+      <button type="button" class="mp-ic" ${act('showRouteInApp', s.id)} aria-label="المسار">${ico('route', 17)}</button>
+      <a class="mp-ic" href="tel:${cleanPhone(s.phone)}" ${act('trackMetric', s.id, 'click')} aria-label="اتصال">${ico('phone', 17)}</a>
     </div>
-    <button type="button" class="mp-x" onclick="hideMapPreview()" aria-label="إغلاق">${ico('x', 14)}</button>`;
+    <button type="button" class="mp-x" ${act('hideMapPreview')} aria-label="إغلاق">${ico('x', 14)}</button>`;
   el.classList.remove('hidden');
 }
 

@@ -24,8 +24,13 @@ function renderShops() {
     return true;
   });
 
-  // الترتيب: الذهبي أولاً -> الأقرب -> الأعلى تقييماً
-  list.sort((a, b) => {
+  // الترتيب حسب اختيار المستخدم؛ الافتراضي (ذكي): الذهبي أولاً -> الأقرب -> الأعلى تقييماً
+  const byName = (a, b) => String(a.name).localeCompare(String(b.name), 'ar');
+  if (sortMode === 'rating') list.sort((a, b) => (b.avgRating - a.avgRating) || (b.revCount - a.revCount) || byName(a, b));
+  else if (sortMode === 'nearest') list.sort((a, b) => (a.dist ?? Infinity) - (b.dist ?? Infinity) || byName(a, b));
+  else if (sortMode === 'newest') list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  else if (sortMode === 'open') list.sort((a, b) => (Number(b.openInfo.isOpen) - Number(a.openInfo.isOpen)) || byName(a, b));
+  else list.sort((a, b) => {
     if (a.plan === 'gold' && b.plan !== 'gold') return -1;
     if (b.plan === 'gold' && a.plan !== 'gold') return 1;
     if (a.dist != null && b.dist != null) return a.dist - b.dist;
@@ -63,12 +68,13 @@ function renderShops() {
 
   // عرض البطاقات
   const container = document.getElementById('shops-list');
+  container.removeAttribute('aria-busy');
   if (list.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
         <svg class="ic ic-22" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <p>لا توجد مشاريع مطابقة لبحثك أو فلاترك الحالية.</p>
-        <button class="btn btn-outline btn-sm" onclick="clearAllFilters()">مسح البحث والفلاتر</button>
+        <button class="btn btn-outline btn-sm" ${act('clearAllFilters')}>مسح البحث والفلاتر</button>
       </div>`;
     return;
   }
@@ -80,7 +86,7 @@ function renderShops() {
 
     return `
       <article class="shop-card ${s.plan === 'gold' ? 'gold' : ''}">
-        <div class="shop-top" onclick="openShopModal('${s.id}')">
+        <div class="shop-top" ${act('openShopModal', s.id)}>
           <img class="shop-thumb" src="${safeImageUrl(s.image_url)}" alt="${escapeHtml(s.name)}" loading="lazy" />
           <div class="shop-info">
             <div class="shop-title-row">
@@ -101,13 +107,47 @@ function renderShops() {
           </div>
         </div>
         <div class="shop-actions ${showDir ? '' : 'two-cols'}">
-          <a class="action-btn action-call" href="tel:${cleanPhone(s.phone)}" onclick="trackMetric('${s.id}','click')">${ICONS.phone} اتصال</a>
-          <a class="action-btn action-wa" target="_blank" rel="noopener" href="https://wa.me/${waNum}" onclick="trackMetric('${s.id}','click')">${ICONS.chat} واتساب</a>
-          ${showDir ? `<button type="button" class="action-btn action-map" onclick="showRouteInApp('${s.id}')">${ICONS.pin} المسار</button>` : ''}
+          <a class="action-btn action-call" href="tel:${cleanPhone(s.phone)}" ${act('trackMetric', s.id, 'click')}>${ICONS.phone} اتصال</a>
+          <a class="action-btn action-wa" target="_blank" rel="noopener" href="https://wa.me/${waNum}" ${act('trackMetric', s.id, 'click')}>${ICONS.chat} واتساب</a>
+          ${showDir ? `<button type="button" class="action-btn action-map" ${act('showRouteInApp', s.id)}>${ICONS.pin} المسار</button>` : ''}
         </div>
       </article>
     `;
   }).join('');
+}
+
+function setSortMode(arg) {
+  const value = typeof arg === 'string' ? arg : arg?.target?.value;
+  sortMode = ['smart', 'nearest', 'rating', 'newest', 'open'].includes(value) ? value : 'smart';
+  if (sortMode === 'nearest' && !userCoords) requestUserLocation();
+  renderShops();
+}
+
+// هياكل عظمية (Skeleton) أثناء تحميل القائمة الأولى
+function renderShopsSkeleton(count = 4) {
+  const c = document.getElementById('shops-list');
+  if (!c) return;
+  c.setAttribute('aria-busy', 'true');
+  c.innerHTML = Array.from({ length: count }, () => `
+    <div class="shop-card sk-card" aria-hidden="true">
+      <div class="sk sk-thumb"></div>
+      <div class="sk-lines"><div class="sk sk-line w60"></div><div class="sk sk-line w40"></div><div class="sk sk-line w80"></div></div>
+    </div>`).join('');
+}
+
+async function shareShop(shopId) {
+  const shop = allShops.find(s => s.id === shopId);
+  if (!shop) return;
+  const url = `${location.origin}${location.pathname}#shop-${encodeURIComponent(shop.id)}`;
+  const data = { title: shop.name, text: `${shop.name} — ويز اليوسفية`, url };
+  try {
+    if (navigator.share) { await navigator.share(data); return; }
+    await navigator.clipboard.writeText(url);
+    showToast('تم نسخ رابط المشروع.', 'ok');
+  } catch (err) {
+    if (err && err.name === 'AbortError') return;
+    showToast('تعذر المشاركة، انسخ الرابط من شريط العنوان.', 'err');
+  }
 }
 
 function trackMetric(shopId, metric) {
@@ -118,10 +158,10 @@ function toggleFav(shopId) {
   const nowFav = !favorites.includes(shopId);
   if (!nowFav) favorites = favorites.filter(id => id !== shopId);
   else favorites.push(shopId);
-  localStorage.setItem('yp_favs', JSON.stringify(favorites));
+  try { localStorage.setItem('yp_favs', JSON.stringify(favorites)); } catch (_) {}
   openShopModal(shopId, { silent: true }).then(() => {
     if (!nowFav) return;
-    const btn = document.querySelector('#modal-shop-body button[onclick*="toggleFav"]');
+    const btn = document.querySelector('#modal-shop-body button[data-action="toggleFav"]');
     if (btn && btn.animate) {
       btn.animate(
         [{ transform: 'scale(1)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }],

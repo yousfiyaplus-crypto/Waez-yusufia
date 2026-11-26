@@ -5,7 +5,7 @@ async function loadAdminTab(tab, btnEl) {
     btnEl.classList.add('active');
   }
   const body = document.getElementById('admin-panel-body');
-  body.innerHTML = '<div class="panel-card">جاري التحميل...</div>';
+  body.innerHTML = skeletonCards(3);
 
   if (tab === 'pending') {
     const { data } = await sb.from('shops').select('*').eq('status', 'pending').order('created_at', { ascending: false });
@@ -27,8 +27,8 @@ async function loadAdminTab(tab, btnEl) {
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:10px;">
-          <button class="btn btn-green btn-sm" onclick="adminUpdateShop('${s.id}', {status:'approved'})">${ICONS.check} موافقة ونشر</button>
-          <button class="btn btn-red btn-sm" onclick="adminUpdateShop('${s.id}', {status:'rejected'})">رفض</button>
+          <button class="btn btn-green btn-sm" ${act('adminUpdateShop', s.id, {status:'approved'})}>${ICONS.check} موافقة ونشر</button>
+          <button class="btn btn-red btn-sm" ${act('adminUpdateShop', s.id, {status:'rejected'})}>رفض</button>
         </div>
       </div>
     `).join('');
@@ -46,9 +46,9 @@ async function loadAdminTab(tab, btnEl) {
           <span style="display:flex;align-items:center;gap:3px;">${ICONS.phone} ${escapeHtml(s.phone)}</span>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
-          <button class="btn btn-outline btn-sm" onclick="adminUpdateShop('${s.id}', {is_verified: ${!s.is_verified}})">${ICONS.check} ${s.is_verified ? 'إلغاء الاعتماد' : 'منح علامة معتمد'}</button>
-          <button class="btn btn-gold btn-sm" onclick="adminUpdateShop('${s.id}', {plan: '${s.plan === 'gold' ? 'free' : 'gold'}'})">${ICONS.star(true)} ${s.plan === 'gold' ? 'إرجاع للمجاني' : 'ترقية لباقة ذهبية'}</button>
-          <button class="btn btn-red btn-sm" onclick="adminDeleteShop('${s.id}')">${ICONS.trash} حذف</button>
+          <button class="btn btn-outline btn-sm" ${act('adminUpdateShop', s.id, {is_verified: !s.is_verified})}>${ICONS.check} ${s.is_verified ? 'إلغاء الاعتماد' : 'منح علامة معتمد'}</button>
+          <button class="btn btn-gold btn-sm" ${act('adminUpdateShop', s.id, {plan: s.plan === 'gold' ? 'free' : 'gold'})}>${ICONS.star(true)} ${s.plan === 'gold' ? 'إرجاع للمجاني' : 'ترقية لباقة ذهبية'}</button>
+          <button class="btn btn-red btn-sm" ${act('adminDeleteShop', s.id)}>${ICONS.trash} حذف</button>
         </div>
       </div>
     `).join('');
@@ -78,8 +78,8 @@ async function loadAdminTab(tab, btnEl) {
           <p style="margin:6px 0;font-size:0.9rem;">${escapeHtml(r.comment || '')}</p>
           ${r.is_reported ? `<div class="msg-box msg-err">${ICONS.flag} بلاغ من صاحب المشروع: ${escapeHtml(r.report_reason || '')}</div>` : ''}
           <div style="display:flex;gap:6px;margin-top:8px;">
-            ${r.status !== 'approved' ? `<button class="btn btn-green btn-sm" onclick="adminUpdateReview('${r.id}','approved')">${ICONS.check} اعتماد</button>` : ''}
-            <button class="btn btn-red btn-sm" onclick="adminDeleteReview('${r.id}')">${ICONS.trash} رفض وحذف</button>
+            ${r.status !== 'approved' ? `<button class="btn btn-green btn-sm" ${act('adminUpdateReview', r.id, 'approved')}>${ICONS.check} اعتماد</button>` : ''}
+            <button class="btn btn-red btn-sm" ${act('adminDeleteReview', r.id)}>${ICONS.trash} رفض وحذف</button>
           </div>
         </div>
       `;
@@ -94,7 +94,7 @@ async function loadAdminTab(tab, btnEl) {
       const waLink = /^9647\d{9}$/.test(waPhone) ? `https://wa.me/${waPhone}?text=${waMessage}` : '';
       const providerPhone = formatWhatsApp(r.assigned_provider_phone);
       const providerLink = /^9647\d{9}$/.test(providerPhone) ? `https://wa.me/${providerPhone}?text=${encodeURIComponent(`مرحباً، معك إدارة ويز اليوسفية. لدينا طلب ${r.category} في ${r.area}. هل يمكنك استلامه؟`)}` : '';
-      return `<div class="panel-card"><div style="display:flex;justify-content:space-between;gap:8px;"><strong>${escapeHtml(r.category)}</strong><span class="request-status">${statusLabels[r.status]||r.status}</span></div><p style="font-size:.82rem;color:var(--text-muted);">${escapeHtml(r.area)} • ${escapeHtml(r.phone)}</p><p style="font-size:.85rem;">${escapeHtml(r.details)}</p><small style="color:var(--text-faint);">${new Date(r.created_at).toLocaleString('ar-IQ')}</small><div class="form-group" style="margin-top:12px;"><label>اسم مقدم الخدمة الذي اخترته</label><input id="provider-name-${r.id}" class="form-control" maxlength="100" value="${escapeHtml(r.assigned_provider_name||'')}" placeholder="اسم الشخص أو الجهة" /></div><div class="form-group"><label>رقم مقدم الخدمة</label><input id="provider-phone-${r.id}" class="form-control" type="tel" maxlength="20" value="${escapeHtml(r.assigned_provider_phone||'')}" placeholder="07xxxxxxxxx" /></div><div class="form-group"><label>ملاحظة للمستخدم (اختياري)</label><input id="provider-notes-${r.id}" class="form-control" maxlength="250" value="${escapeHtml(r.assignment_notes||'')}" placeholder="مثلاً: سيتواصل معك خلال نصف ساعة" /></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">${waLink ? `<a class="btn btn-outline btn-sm" href="${waLink}" target="_blank" rel="noopener noreferrer">مراسلة صاحب الطلب</a>` : '<span class="request-status">تحقق من رقم صاحب الطلب</span>'}${providerLink ? `<a class="btn btn-green btn-sm" href="${providerLink}" target="_blank" rel="noopener noreferrer">مراسلة مقدم الخدمة</a>` : ''}<button class="btn btn-green btn-sm" onclick="adminAssignServiceProvider('${r.id}')">حفظ التوجيه وإبلاغ المستخدم</button><button class="btn btn-outline btn-sm" onclick="adminSetRequestStatus('${r.id}','reviewing')">قيد المتابعة</button><button class="btn btn-primary btn-sm" onclick="adminSetRequestStatus('${r.id}','completed')">مكتمل</button><button class="btn btn-red btn-sm" onclick="adminSetRequestStatus('${r.id}','cancelled')">إلغاء</button></div></div>`;
+      return `<div class="panel-card"><div style="display:flex;justify-content:space-between;gap:8px;"><strong>${escapeHtml(r.category)}</strong><span class="request-status">${statusLabels[r.status]||r.status}</span></div><p style="font-size:.82rem;color:var(--text-muted);">${escapeHtml(r.area)} • ${escapeHtml(r.phone)}</p><p style="font-size:.85rem;">${escapeHtml(r.details)}</p><small style="color:var(--text-faint);">${new Date(r.created_at).toLocaleString('ar-IQ')}</small><div class="form-group" style="margin-top:12px;"><label>اسم مقدم الخدمة الذي اخترته</label><input id="provider-name-${r.id}" class="form-control" maxlength="100" value="${escapeHtml(r.assigned_provider_name||'')}" placeholder="اسم الشخص أو الجهة" /></div><div class="form-group"><label>رقم مقدم الخدمة</label><input id="provider-phone-${r.id}" class="form-control" type="tel" maxlength="20" value="${escapeHtml(r.assigned_provider_phone||'')}" placeholder="07xxxxxxxxx" /></div><div class="form-group"><label>ملاحظة للمستخدم (اختياري)</label><input id="provider-notes-${r.id}" class="form-control" maxlength="250" value="${escapeHtml(r.assignment_notes||'')}" placeholder="مثلاً: سيتواصل معك خلال نصف ساعة" /></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">${waLink ? `<a class="btn btn-outline btn-sm" href="${waLink}" target="_blank" rel="noopener noreferrer">مراسلة صاحب الطلب</a>` : '<span class="request-status">تحقق من رقم صاحب الطلب</span>'}${providerLink ? `<a class="btn btn-green btn-sm" href="${providerLink}" target="_blank" rel="noopener noreferrer">مراسلة مقدم الخدمة</a>` : ''}<button class="btn btn-green btn-sm" ${act('adminAssignServiceProvider', r.id)}>حفظ التوجيه وإبلاغ المستخدم</button><button class="btn btn-outline btn-sm" ${act('adminSetRequestStatus', r.id, 'reviewing')}>قيد المتابعة</button><button class="btn btn-primary btn-sm" ${act('adminSetRequestStatus', r.id, 'completed')}>مكتمل</button><button class="btn btn-red btn-sm" ${act('adminSetRequestStatus', r.id, 'cancelled')}>إلغاء</button></div></div>`;
     }).join('') || '<div class="panel-card">لا توجد طلبات خدمة حتى الآن.</div>';
   } else if (tab === 'community') {
     const { data, error } = await sb.from('community_posts').select('*').order('created_at',{ascending:false}).limit(50);
@@ -110,17 +110,17 @@ async function loadAdminTab(tab, btnEl) {
         <div class="form-group"><label for="cp-kind">نوع التحديث</label><select id="cp-kind" class="form-control"><option value="news">خبر محلي — بطاقة بيضاء</option><option value="alert">تنبيه مهم — بطاقة حمراء</option><option value="offer">عرض تجاري — بطاقة خضراء</option></select><small style="display:block;color:var(--text-muted);margin-top:5px;">لون البطاقة يتغير تلقائياً حسب النوع الذي تختاره.</small></div>
         <div class="form-group"><label for="cp-area">المنطقة (اختياري)</label><input id="cp-area" class="form-control" maxlength="80" placeholder="مثال: مركز اليوسفية" /></div>
         <div class="form-group"><label for="cp-days">مدة الظهور</label><select id="cp-days" class="form-control"><option value="1">يوم واحد</option><option value="3" selected>3 أيام</option><option value="7">أسبوع</option><option value="30">شهر</option><option value="0">بدون انتهاء تلقائي</option></select></div>
-        <button class="btn btn-primary btn-block" onclick="submitCommunityPost()">نشر التحديث</button>
+        <button class="btn btn-primary btn-block" ${act('submitCommunityPost')}>نشر التحديث</button>
       </div>
       <h4>التحديثات المنشورة (${(data||[]).length})</h4>
-      ${(data||[]).map(post=>`<div class="panel-card"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;"><strong>${escapeHtml(post.title)}</strong><span class="badge ${post.kind==='alert'?'badge-closed':post.kind==='offer'?'badge-open':'badge-duty'}">${post.kind==='alert'?'تنبيه':post.kind==='offer'?'عرض':'خبر'}</span></div><p style="font-size:.82rem;color:var(--text-muted);">${escapeHtml(post.body)}</p><button class="btn btn-red btn-sm" onclick="adminDeleteCommunityPost('${post.id}')">حذف</button></div>`).join('') || '<div class="panel-card">لا توجد تحديثات منشورة بعد.</div>'}
+      ${(data||[]).map(post=>`<div class="panel-card"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;"><strong>${escapeHtml(post.title)}</strong><span class="badge ${post.kind==='alert'?'badge-closed':post.kind==='offer'?'badge-open':'badge-duty'}">${post.kind==='alert'?'تنبيه':post.kind==='offer'?'عرض':'خبر'}</span></div><p style="font-size:.82rem;color:var(--text-muted);">${escapeHtml(post.body)}</p><button class="btn btn-red btn-sm" ${act('adminDeleteCommunityPost', post.id)}>حذف</button></div>`).join('') || '<div class="panel-card">لا توجد تحديثات منشورة بعد.</div>'}
     `;
   } else if (tab === 'settings') {
     body.innerHTML = `
       <div class="panel-card">
         <h4 style="margin-top:0;">التحكم العام بالخريطة</h4>
         <p style="font-size:0.86rem;color:var(--text-muted);">إذا احتجت لأي سبب إخفاء الخريطة التفاعلية من الموقع بالكامل وتحويله لقائمة بطاقات فقط:</p>
-        <button class="btn ${mapEnabledSetting ? 'btn-red' : 'btn-green'}" onclick="toggleGlobalMap()">
+        <button class="btn ${mapEnabledSetting ? 'btn-red' : 'btn-green'}" ${act('toggleGlobalMap')}>
           ${mapEnabledSetting ? 'إخفاء الخريطة من الموقع كله' : `${ICONS.pin} تفعيل وإظهار الخريطة بالموقع`}
         </button>
       </div>
@@ -154,7 +154,10 @@ async function adminSetRequestStatus(id,status) {
 }
 
 async function adminUpdateShop(id, changes) {
-  await sb.from('shops').update(changes).eq('id', id);
+  const allowed = ['status', 'is_verified', 'plan'];
+  const safe = Object.fromEntries(Object.entries(changes || {}).filter(([k]) => allowed.includes(k)));
+  const { error } = await sb.from('shops').update(safe).eq('id', id);
+  if (error) return showToast('تعذر تنفيذ العملية: ' + error.message, 'err', 4500);
   await loadInitialData();
   loadAdminTab(changes.status ? 'pending' : 'shops');
 }
@@ -165,27 +168,33 @@ async function adminDeleteShop(id) {
     confirmText: 'حذف نهائياً',
   });
   if (!ok) return;
-  await sb.from('shops').delete().eq('id', id);
+  const { error } = await sb.from('shops').delete().eq('id', id);
+  if (error) return showToast('تعذر الحذف: ' + error.message, 'err', 4500);
   await loadInitialData();
   loadAdminTab('shops');
   showToast(`${ICONS.check} تم حذف المشروع.`, 'ok');
 }
 
 async function adminUpdateReview(id, status) {
-  await sb.from('reviews').update({ status, is_reported: false }).eq('id', id);
+  const { error } = await sb.from('reviews').update({ status, is_reported: false }).eq('id', id);
+  if (error) return showToast('تعذر تحديث التقييم: ' + error.message, 'err', 4500);
   await loadInitialData();
   loadAdminTab('reviews');
 }
 
 async function adminDeleteReview(id) {
-  await sb.from('reviews').delete().eq('id', id);
+  const ok = await showDialog({ message: 'حذف هذا التقييم نهائياً؟', confirmText: 'حذف التقييم' });
+  if (!ok) return;
+  const { error } = await sb.from('reviews').delete().eq('id', id);
+  if (error) return showToast('تعذر حذف التقييم: ' + error.message, 'err', 4500);
   await loadInitialData();
   loadAdminTab('reviews');
 }
 
 async function toggleGlobalMap() {
   const nextVal = !mapEnabledSetting;
-  await sb.from('app_settings').upsert({ key: 'map_enabled', value: nextVal });
+  const { error } = await sb.from('app_settings').upsert({ key: 'map_enabled', value: nextVal });
+  if (error) return showToast('تعذر حفظ الإعداد: ' + error.message, 'err', 4500);
   await loadInitialData();
   loadAdminTab('settings');
 }

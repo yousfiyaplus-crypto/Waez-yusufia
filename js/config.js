@@ -20,7 +20,12 @@ let mapEnabledSetting = true;
 let selectedCategory = 'all';
 let quickFilters = { open: false, verified: false, fav: false };
 let userCoords = null;
-let favorites = JSON.parse(localStorage.getItem('yp_favs') || '[]');
+let favorites = (() => {
+  try {
+    const v = JSON.parse(localStorage.getItem('yp_favs') || '[]');
+    return Array.isArray(v) ? v : [];
+  } catch (_) { return []; }
+})();
 let authMode = 'login';
 let deferredPrompt = null;
 let activityRealtimeChannel = null;
@@ -31,6 +36,8 @@ let routeLayer = null;
 let pickerMap = null;
 let pickerMarker = null;
 let pendingCompressedBlob = null;
+let ownerShopsCache = {};
+let sortMode = 'smart';
 
 // ===== مكتبة الأيقونات (SVG مضمّنة، بلا طلبات خارجية) =====
 const ICONS = {

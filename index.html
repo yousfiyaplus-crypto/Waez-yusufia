@@ -5,11 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ويز اليوسفية | دليل وخريطة المنطقة</title>
   <meta name="description" content="دليل وخريطة تفاعلية لمحلات وخدمات منطقة اليوسفية في بغداد: مواعيد الدوام، التقييمات، طلب خدمة، وتحديثات محلية يومية." />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://router.project-osrm.org; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <!-- بدّل النطاق بنطاقك الحقيقي عبر: ./tools/set-domain.sh https://your-domain.com -->
   <link rel="canonical" href="https://waez-yusufiya.example/" />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="ويز اليوسفية | دليل وخريطة المنطقة" />
   <meta property="og:description" content="دليل وخريطة تفاعلية لمحلات وخدمات منطقة اليوسفية في بغداد: مواعيد الدوام، التقييمات، طلب خدمة، وتحديثات محلية يومية." />
-  <meta property="og:image" content="./logo-512.png" />
+  <meta property="og:image" content="https://waez-yusufiya.example/logo-512.png" />
+  <meta property="og:url" content="https://waez-yusufiya.example/" />
   <meta property="og:locale" content="ar_IQ" />
   <meta name="twitter:card" content="summary" />
   <meta name="theme-color" content="#0d0f14" />
@@ -502,24 +506,48 @@
     .nav-item.active::before { content: ""; position: absolute; top: -7px; width: 26px; height: 3px; border-radius: 0 0 4px 4px; background: var(--brand-gold); }
     .toast.info { background: #2b3140; }
     @media (prefers-reduced-motion: reduce) { .yp-pin.gold, .yp-me, .view-enter, .modal-sheet, .map-preview { animation: none; } }
+
+    /* ===== Skeleton loaders ===== */
+    .sk { background: linear-gradient(90deg, rgba(128,128,128,.14) 25%, rgba(128,128,128,.28) 37%, rgba(128,128,128,.14) 63%); background-size: 400% 100%; animation: sk-shimmer 1.3s ease infinite; border-radius: 8px; }
+    @keyframes sk-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+    .sk-line { height: 12px; margin: 8px 0; }
+    .sk-line.w40 { width: 40%; } .sk-line.w60 { width: 60%; } .sk-line.w80 { width: 80%; }
+    .sk-thumb { width: 84px; height: 84px; border-radius: 14px; flex: none; }
+    .sk-banner { width: 100%; height: 180px; border-radius: 14px; }
+    .sk-card { display: flex; gap: 12px; padding: 12px; align-items: center; }
+    .sk-lines { flex: 1; min-width: 0; }
+    .sk-panel { pointer-events: none; }
+    /* ===== إحصائيات صاحب المشروع ===== */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin-top: 12px; }
+    .stat-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: rgba(128,128,128,.06); }
+    .stat-tile b { font-size: 1.1rem; font-weight: 800; }
+    .stat-tile small { color: var(--text-muted); font-size: .72rem; }
+    .stat-ic { color: var(--brand-gold); display: inline-flex; }
+    /* ===== الفرز ===== */
+    .sort-row { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: .82rem; color: var(--text-muted); }
+    .sort-row select { max-width: 190px; padding: 7px 10px; font-size: .82rem; }
+    .skip-link { position: absolute; inset-inline-start: 8px; top: -60px; z-index: 9999; background: var(--brand-gold); color: #000; padding: 8px 14px; border-radius: 8px; font-weight: 700; }
+    .skip-link:focus { top: 8px; }
+    @media (prefers-reduced-motion: reduce) { .sk { animation: none; } * { scroll-behavior: auto !important; } }
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#view-home">تخطّي إلى المحتوى</a>
 
   <header>
     <div class="brand">
-      <img src="./logo.png" alt="ويز اليوسفية" onerror="this.style.display='none'" />
+      <img src="./logo.png" alt="ويز اليوسفية" data-hide-on-error />
       <div>
         <div class="brand-title">ويز <span>اليوسفية</span></div>
         <div class="brand-sub">منطقتك.. مجتمع وخدمات وحياة يومية</div>
       </div>
     </div>
     <div class="header-actions">
-      <button id="install-pwa-btn" class="badge-user hidden" onclick="installPWA()">
+      <button id="install-pwa-btn" class="badge-user hidden" data-action="installPWA">
         <svg class="ic ic-16" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
         تثبيت التطبيق
       </button>
-      <div id="header-user-badge" class="badge-user" onclick="switchView('auth')">
+      <div id="header-user-badge" class="badge-user" data-action="switchView" data-args='["auth"]'>
         <svg class="ic ic-16" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
         دخول / تسجيل
       </div>
@@ -533,8 +561,8 @@
       <h1>كل اليوسفية<br><span>أقرب إلك.</span></h1>
       <p>اكتشف المحلات والخدمات القريبة منك، وتأكد من أوقات الدوام قبل ما تطلع.</p>
       <div class="hero-actions">
-        <button class="hero-primary" onclick="document.getElementById('search-input').focus(); window.scrollTo({top:0,behavior:'smooth'});">ابدأ البحث <span data-ic="arrow" data-s="16"></span></button>
-        <button class="hero-secondary" onclick="switchView('owner')">أضف مشروعك <span data-ic="plus" data-s="16"></span></button>
+        <button class="hero-primary" data-action="startSearch">ابدأ البحث <span data-ic="arrow" data-s="16"></span></button>
+        <button class="hero-secondary" data-action="switchView" data-args='["owner"]'>أضف مشروعك <span data-ic="plus" data-s="16"></span></button>
       </div>
       <div class="hero-stats">
         <div><strong id="hero-shops-count">—</strong><span>مشروع مسجل</span></div>
@@ -551,21 +579,21 @@
         <span class="hub-live"><i></i> مساحة اليوسفية</span>
       </div>
       <div class="daily-hub-grid">
-        <button class="hub-tile hub-pulse" onclick="scrollToPulse()"><span class="hub-icon" data-ic="radio" data-s="20"></span><strong>نبض اليوسفية</strong><small>أخبار وتنبيهات وعروض</small><span class="hub-arrow" data-ic="arrow" data-s="16"></span></button>
-        <button class="hub-tile hub-discover" onclick="focusDirectory()"><span class="hub-icon" data-ic="search" data-s="20"></span><strong>اكتشف الأماكن</strong><small>محلات وخدمات قريبة</small><span class="hub-arrow" data-ic="arrow" data-s="16"></span></button>
-        <button class="hub-tile hub-service" onclick="switchView('request')"><span class="hub-icon" data-ic="plus" data-s="20"></span><strong>اطلب خدمة</strong><small>نوصلك بمقدم مناسب</small><span class="hub-arrow" data-ic="arrow" data-s="16"></span></button>
-        <button class="hub-tile hub-project" onclick="switchView('owner')"><span class="hub-icon" data-ic="store" data-s="20"></span><strong>مشروعي</strong><small>أضف مشروعك أو أدره</small><span class="hub-arrow" data-ic="arrow" data-s="16"></span></button>
+        <button class="hub-tile hub-pulse" data-action="scrollToPulse"><span class="hub-icon" data-ic="radio" data-s="20"></span><strong>نبض اليوسفية</strong><small>أخبار وتنبيهات وعروض</small><span class="hub-arrow" data-ic="arrow" data-s="16"></span></button>
+        <button class="hub-tile hub-discover" data-action="focusDirectory"><span class="hub-icon" data-ic="search" data-s="20"></span><strong>اكتشف الأماكن</strong><small>محلات وخدمات قريبة</small><span class="hub-arrow" data-ic="arrow" data-s="16"></span></button>
+        <button class="hub-tile hub-service" data-action="switchView" data-args='["request"]'><span class="hub-icon" data-ic="plus" data-s="20"></span><strong>اطلب خدمة</strong><small>نوصلك بمقدم مناسب</small><span class="hub-arrow" data-ic="arrow" data-s="16"></span></button>
+        <button class="hub-tile hub-project" data-action="switchView" data-args='["owner"]'><span class="hub-icon" data-ic="store" data-s="20"></span><strong>مشروعي</strong><small>أضف مشروعك أو أدره</small><span class="hub-arrow" data-ic="arrow" data-s="16"></span></button>
       </div>
       <div class="hub-public-note"><span data-ic="shield" data-s="15"></span> التصفح متاح للجميع، والحساب مطلوب للطلبات والتفاعل.</div>
     </section>
 
     <section id="community-pulse" class="pulse-section hidden" aria-label="آخر تحديثات اليوسفية">
-      <div class="pulse-heading"><div><span class="eyebrow">منطقتك أولاً</span><h2>نبض اليوسفية</h2></div><div class="pulse-tools"><span class="pulse-live">تحديثات محلية</span><button type="button" class="pulse-refresh" onclick="loadCommunityPosts()" aria-label="تحديث النبض"><span data-ic="refresh" data-s="14"></span> تحديث</button></div></div>
+      <div class="pulse-heading"><div><span class="eyebrow">منطقتك أولاً</span><h2>نبض اليوسفية</h2></div><div class="pulse-tools"><span class="pulse-live">تحديثات محلية</span><button type="button" class="pulse-refresh" data-action="loadCommunityPosts" aria-label="تحديث النبض"><span data-ic="refresh" data-s="14"></span> تحديث</button></div></div>
       <div id="community-post-filters" class="pulse-filters" role="group" aria-label="تصفية التحديثات">
-        <button type="button" class="pulse-filter active" data-community-filter="all" onclick="setCommunityFilter('all')">الكل</button>
-        <button type="button" class="pulse-filter" data-community-filter="news" onclick="setCommunityFilter('news')">أخبار</button>
-        <button type="button" class="pulse-filter" data-community-filter="alert" onclick="setCommunityFilter('alert')">تنبيهات</button>
-        <button type="button" class="pulse-filter" data-community-filter="offer" onclick="setCommunityFilter('offer')">عروض</button>
+        <button type="button" class="pulse-filter active" data-community-filter="all" data-action="setCommunityFilter" data-args='["all"]'>الكل</button>
+        <button type="button" class="pulse-filter" data-community-filter="news" data-action="setCommunityFilter" data-args='["news"]'>أخبار</button>
+        <button type="button" class="pulse-filter" data-community-filter="alert" data-action="setCommunityFilter" data-args='["alert"]'>تنبيهات</button>
+        <button type="button" class="pulse-filter" data-community-filter="offer" data-action="setCommunityFilter" data-args='["offer"]'>عروض</button>
       </div>
       <div id="community-posts-list" class="pulse-list" aria-live="polite"></div>
     </section>
@@ -576,8 +604,8 @@
     </div>
     <div class="search-box">
       <svg class="ic ic-18" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="search-input" type="search" placeholder="ابحث عن مطعم، صيدلية، سباك، أو منطقة..." oninput="onSearchInput()" />
-      <button type="button" id="search-clear-btn" class="search-clear" aria-label="مسح البحث" onclick="clearSearch()">
+      <input id="search-input" type="search" placeholder="ابحث عن مطعم، صيدلية، سباك، أو منطقة..." data-input="onSearchInput" />
+      <button type="button" id="search-clear-btn" class="search-clear" aria-label="مسح البحث" data-action="clearSearch">
         <svg class="ic ic-16" viewBox="0 0 24 24" stroke-width="2.3"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
     </div>
@@ -585,38 +613,48 @@
     <div id="category-pills" class="pills-scroll"></div>
 
     <div class="pills-scroll">
-      <button id="btn-my-location" class="pill" onclick="requestUserLocation()">
+      <button id="btn-my-location" class="pill" data-action="requestUserLocation">
         <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M12 22s7-7.58 7-12.5A7 7 0 0 0 5 9.5C5 14.42 12 22 12 22z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
         الأقرب لمكاني
       </button>
-      <button id="filter-open" class="pill chip-toggle" onclick="toggleQuickFilter('open')">
+      <button id="filter-open" class="pill chip-toggle" data-action="toggleQuickFilter" data-args='["open"]'>
         <span class="dot" style="color:#16a34a;"></span> مفتوح الآن
       </button>
-      <button id="filter-verified" class="pill chip-toggle" onclick="toggleQuickFilter('verified')">
+      <button id="filter-verified" class="pill chip-toggle" data-action="toggleQuickFilter" data-args='["verified"]'>
         <svg class="ic ic-14" viewBox="0 0 24 24" stroke-width="2.3"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
         معتمد فقط
       </button>
-      <button id="filter-fav" class="pill chip-toggle" onclick="toggleQuickFilter('fav')">
+      <button id="filter-fav" class="pill chip-toggle" data-action="toggleQuickFilter" data-args='["fav"]'>
         <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M12 21s-7.2-4.5-9.6-9C1.1 9 2.5 5.5 5.9 5.5c2 0 3.3 1.1 4 2.2.7-1.1 2-2.2 4-2.2 3.4 0 4.8 3.5 3.5 6.5-2.4 4.5-9.6 9-9.6 9z"/></svg>
         المفضلة
       </button>
     </div>
     <div id="location-status" class="shop-meta" style="margin-bottom:8px;"></div>
+    <div class="sort-row">
+      <label for="sort-select">ترتيب النتائج:</label>
+      <select id="sort-select" class="form-control" data-change="setSortMode">
+        <option value="smart">الأنسب (افتراضي)</option>
+        <option value="nearest">الأقرب لي</option>
+        <option value="rating">الأعلى تقييماً</option>
+        <option value="open">المفتوح أولاً</option>
+        <option value="newest">الأحدث</option>
+      </select>
+    </div>
 
     <div class="results-toolbar">
       <div><span class="eyebrow">نتائج البحث</span><strong>أماكن قريبة منك</strong></div>
       <div class="view-switch" role="group" aria-label="طريقة عرض النتائج">
-        <button type="button" id="show-map-view" class="view-switch-btn active" onclick="setResultsView('map')">الخريطة</button>
-        <button type="button" id="show-list-view" class="view-switch-btn" onclick="setResultsView('list')">القائمة</button>
+        <button type="button" id="show-map-view" class="view-switch-btn active" data-action="setResultsView" data-args='["map"]'>الخريطة</button>
+        <button type="button" id="show-list-view" class="view-switch-btn" data-action="setResultsView" data-args='["list"]'>القائمة</button>
       </div>
     </div>
     <div id="map-wrapper" class="map-card">
       <div id="main-map"></div>
       <div class="map-tools">
-        <button type="button" onclick="requestUserLocation()" aria-label="موقعي" title="موقعي" data-ic="locate" data-s="19"></button>
-        <button type="button" onclick="fitMapToShops()" aria-label="عرض كل المشاريع" title="عرض الكل" data-ic="fit" data-s="19"></button>
-        <button type="button" id="tool-style" onclick="toggleMapStyle()" aria-label="تبديل نمط الخريطة" title="نمط الخريطة" data-ic="layers" data-s="19"></button>
-        <button type="button" id="tool-full" onclick="toggleMapFullscreen()" aria-label="تكبير الخريطة" title="تكبير" data-ic="expand" data-s="19"></button>
+        <button type="button" data-action="requestUserLocation" aria-label="موقعي" title="موقعي" data-ic="locate" data-s="19"></button>
+        <button type="button" data-action="fitMapToShops" aria-label="عرض كل المشاريع" title="عرض الكل" data-ic="fit" data-s="19"></button>
+        <button type="button" id="tool-style" data-action="toggleMapStyle" aria-label="تبديل نمط الخريطة" title="نمط الخريطة" data-ic="layers" data-s="19"></button>
+        <button type="button" id="tool-full" data-action="toggleMapFullscreen" aria-label="تكبير الخريطة" title="تكبير" data-ic="expand" data-s="19"></button>
       </div>
       <div id="map-preview" class="map-preview hidden" aria-live="polite"></div>
       <div class="map-bar">
@@ -631,7 +669,7 @@
             <svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M14.5 9.5l-2 5-5 2 2-5 5-2z"/></svg>
             ملاحة
           </a>
-          <button type="button" class="btn btn-outline btn-sm" style="padding:6px 9px;" onclick="clearRoute()" aria-label="إغلاق المسار">
+          <button type="button" class="btn btn-outline btn-sm" style="padding:6px 9px;" data-action="clearRoute" aria-label="إغلاق المسار">
             <svg class="ic ic-14" viewBox="0 0 24 24" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg>
           </button>
         </div>
@@ -655,14 +693,14 @@
     <div id="request-login-note" class="panel-card hidden">
       <strong>سجّل دخولك أولاً</strong>
       <p style="color:var(--text-muted);font-size:.84rem;">حتى نكدر نتابع طلبك ونحفظه بحسابك.</p>
-      <button class="btn btn-primary btn-block" onclick="switchView('auth')">تسجيل الدخول</button>
+      <button class="btn btn-primary btn-block" data-action="switchView" data-args='["auth"]'>تسجيل الدخول</button>
     </div>
     <div id="service-request-form" class="panel-card">
       <div class="form-group"><label for="sr-category">نوع الخدمة</label><select id="sr-category" class="form-control"><option value="">اختر نوع الخدمة</option><option>كهربائي</option><option>سباك</option><option>صيانة أجهزة</option><option>توصيل</option><option>نقل أثاث</option><option>تنظيف</option><option>خدمة أخرى</option></select></div>
       <div class="form-group"><label for="sr-area">المنطقة</label><input id="sr-area" class="form-control" maxlength="100" placeholder="مثال: مركز اليوسفية" /></div>
       <div class="form-group"><label for="sr-phone">رقم الهاتف للتواصل</label><input id="sr-phone" class="form-control" type="tel" inputmode="tel" maxlength="20" placeholder="07xxxxxxxxx" /></div>
       <div class="form-group"><label for="sr-details">تفاصيل الطلب</label><textarea id="sr-details" class="form-control" rows="4" maxlength="1000" placeholder="اشرح شنو تحتاج، ويفضل تذكر الوقت المناسب..."></textarea></div>
-      <button class="btn btn-primary btn-block" id="sr-submit" onclick="submitServiceRequest()">إرسال طلب الخدمة</button>
+      <button class="btn btn-primary btn-block" id="sr-submit" data-action="submitServiceRequest">إرسال طلب الخدمة</button>
       <div id="sr-message" style="margin-top:10px;"></div>
     </div>
     <div id="my-service-requests" class="panel-card hidden"></div>
@@ -676,7 +714,7 @@
         أضف مشروعك أو محلك مجاناً
       </h3>
       <p style="color:var(--text-muted); font-size:0.9rem;">سجّل حسابك أولاً لتتمكن من إضافة مشروعك، رفع صورته، وتحديث أوقات الدوام وحالة الخفارة أو الإغلاق بأي وقت.</p>
-      <button class="btn btn-primary btn-block" onclick="switchView('auth')">تسجيل الدخول / إنشاء حساب</button>
+      <button class="btn btn-primary btn-block" data-action="switchView" data-args='["auth"]'>تسجيل الدخول / إنشاء حساب</button>
     </div>
 
     <div id="owner-content" class="hidden">
@@ -685,7 +723,7 @@
           <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0"/><path d="M5 9v10h14V9"/><path d="M9 19v-5h6v5"/></svg>
           مشاريعي المسجلة
         </h3>
-        <button class="btn btn-gold btn-sm" onclick="openOwnerForm()">
+        <button class="btn btn-gold btn-sm" data-action="openOwnerForm">
           <svg class="ic ic-14" viewBox="0 0 24 24" stroke-width="2.3"><path d="M12 5v14M5 12h14"/></svg>
           إضافة مشروع جديد
         </button>
@@ -762,7 +800,7 @@
 
         <div class="panel-card" style="background:#fafbfc; padding:13px;">
           <label style="font-weight:800; display:flex; align-items:center; gap:8px; cursor:pointer;">
-            <input type="checkbox" id="f-show-map" checked onchange="togglePickerMapVisibility()" />
+            <input type="checkbox" id="f-show-map" checked data-change="togglePickerMapVisibility" />
             إظهار موقع المحل الدقيق على الخريطة
           </label>
           <small style="color:var(--text-muted); display:block; margin-top:4px;">
@@ -770,7 +808,7 @@
           </small>
 
           <div id="picker-map-box" style="margin-top:10px;">
-            <button type="button" id="btn-gps-pick" class="btn btn-outline btn-sm" onclick="pickCurrentGPS()">
+            <button type="button" id="btn-gps-pick" class="btn btn-outline btn-sm" data-action="pickCurrentGPS">
               <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M12 22s7-7.58 7-12.5A7 7 0 0 0 5 9.5C5 14.42 12 22 12 22z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
               حدد موقعي الحالي تلقائياً
             </button>
@@ -783,16 +821,16 @@
 
         <div class="form-group">
           <label>صورة واجهة المحل أو الشعار (يتم ضغطها تلقائياً)</label>
-          <input id="f-image" type="file" accept="image/*" class="form-control" onchange="previewShopImage(event)" />
+          <input id="f-image" type="file" accept="image/*" class="form-control" data-change="previewShopImage" />
           <img id="f-image-preview" class="hidden" style="width:100%; max-height:180px; object-fit:cover; border-radius:var(--radius-md); margin-top:8px;" />
         </div>
 
         <div class="row-2">
-          <button id="btn-save-shop" class="btn btn-green" onclick="saveShop()">
+          <button id="btn-save-shop" class="btn btn-green" data-action="saveShop">
             <svg class="ic ic-16" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
             حفظ وإرسال للمراجعة
           </button>
-          <button id="btn-cancel-edit" class="btn btn-outline" onclick="closeOwnerForm()">إلغاء</button>
+          <button id="btn-cancel-edit" class="btn btn-outline" data-action="closeOwnerForm">إلغاء</button>
         </div>
         <div id="owner-form-msg"></div>
       </div>
@@ -806,27 +844,27 @@
       لوحة تحكم إدارة ويز اليوسفية
     </h3>
     <div class="pills-scroll" id="admin-tabs">
-      <button class="pill active" onclick="loadAdminTab('pending', this)">
+      <button class="pill active" data-action="loadAdminTab" data-args='["pending", "$el"]'>
         <svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
         طلبات معلقة
       </button>
-      <button class="pill" onclick="loadAdminTab('shops', this)">
+      <button class="pill" data-action="loadAdminTab" data-args='["shops", "$el"]'>
         <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0"/><path d="M5 9v10h14V9"/><path d="M9 19v-5h6v5"/></svg>
         المشاريع والاشتراكات
       </button>
-      <button class="pill" onclick="loadAdminTab('reviews', this)">
+      <button class="pill" data-action="loadAdminTab" data-args='["reviews", "$el"]'>
         <svg class="ic ic-14 ic-fill" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2.5l2.95 6.26 6.9.76-5.13 4.73 1.4 6.78L12 17.9 5.88 21.03l1.4-6.78L2.15 9.52l6.9-.76L12 2.5z"/></svg>
         فحص التقييمات
       </button>
-      <button class="pill" onclick="loadAdminTab('requests', this)">
+      <button class="pill" data-action="loadAdminTab" data-args='["requests", "$el"]'>
         <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M4 5h16v12H8l-4 3z"/><path d="M8 9h8M8 13h5"/></svg>
         طلبات الخدمة
       </button>
-      <button class="pill" onclick="loadAdminTab('community', this)">
+      <button class="pill" data-action="loadAdminTab" data-args='["community", "$el"]'>
         <svg class="ic ic-14" viewBox="0 0 24 24"><path d="M4 5h16v12H8l-4 3z"/><path d="M8 9h8M8 13h5"/></svg>
         نبض اليوسفية
       </button>
-      <button class="pill" onclick="loadAdminTab('settings', this)">
+      <button class="pill" data-action="loadAdminTab" data-args='["settings", "$el"]'>
         <svg class="ic ic-14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         إعدادات الخريطة
       </button>
@@ -837,7 +875,7 @@
   <!-- مركز النشاط والإشعارات -->
   <section id="view-activity" class="container hidden">
     <div class="section-heading"><div><span class="eyebrow">كل ما يخصك</span><h2>مركز النشاط</h2></div></div>
-    <div class="activity-toolbar"><span id="activity-summary" style="color:var(--text-muted);font-size:.85rem;">إشعاراتك وتحديثات طلباتك</span><button class="btn btn-outline btn-sm" onclick="markAllNotificationsRead()">قراءة الكل</button></div>
+    <div class="activity-toolbar"><span id="activity-summary" style="color:var(--text-muted);font-size:.85rem;">إشعاراتك وتحديثات طلباتك</span><span style="display:flex;gap:6px;flex-wrap:wrap;"><button id="enable-notifs-btn" class="btn btn-gold btn-sm hidden" data-action="enableBrowserNotifications">تفعيل تنبيهات المتصفح</button><button class="btn btn-outline btn-sm" data-action="markAllNotificationsRead">قراءة الكل</button></span></div>
     <div id="activity-list"><div class="panel-card">سجّل الدخول لمشاهدة نشاطك.</div></div>
   </section>
 
@@ -845,8 +883,8 @@
   <section id="view-auth" class="container hidden">
     <div id="auth-forms-card" class="panel-card">
       <div class="row-2" style="margin-bottom:14px;">
-        <button id="tab-login" class="btn btn-primary" onclick="setAuthMode('login')">تسجيل الدخول</button>
-        <button id="tab-signup" class="btn btn-outline" onclick="setAuthMode('signup')">إنشاء حساب جديد</button>
+        <button id="tab-login" class="btn btn-primary" data-action="setAuthMode" data-args='["login"]'>تسجيل الدخول</button>
+        <button id="tab-signup" class="btn btn-outline" data-action="setAuthMode" data-args='["signup"]'>إنشاء حساب جديد</button>
       </div>
       <div id="auth-name-group" class="form-group hidden">
         <label>الاسم الكامل (أو اسم المشروع)</label>
@@ -861,9 +899,9 @@
         <input id="auth-password" type="password" class="form-control" placeholder="••••••••" />
       </div>
       <div style="text-align:left;margin:-6px 0 10px;">
-        <button type="button" class="link-btn" onclick="toggleForgotPassword()">نسيت كلمة المرور؟</button>
+        <button type="button" class="link-btn" data-action="toggleForgotPassword">نسيت كلمة المرور؟</button>
       </div>
-      <button id="auth-submit-btn" class="btn btn-gold btn-block" onclick="submitAuth()">دخول</button>
+      <button id="auth-submit-btn" class="btn btn-gold btn-block" data-action="submitAuth">دخول</button>
       <div id="auth-msg"></div>
 
       <div id="forgot-pass-box" class="hidden" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
@@ -871,7 +909,7 @@
           <label>أدخل بريدك لإرسال رابط إعادة تعيين كلمة المرور</label>
           <input id="forgot-email" type="email" class="form-control" placeholder="example@gmail.com" />
         </div>
-        <button id="forgot-pass-btn" type="button" class="btn btn-outline btn-block" onclick="requestPasswordReset()">إرسال رابط إعادة التعيين</button>
+        <button id="forgot-pass-btn" type="button" class="btn btn-outline btn-block" data-action="requestPasswordReset">إرسال رابط إعادة التعيين</button>
         <div id="forgot-pass-msg"></div>
       </div>
     </div>
@@ -882,7 +920,7 @@
         <label>كلمة المرور الجديدة (٦ أحرف على الأقل)</label>
         <input id="new-password" type="password" class="form-control" placeholder="••••••••" />
       </div>
-      <button id="reset-pass-btn" type="button" class="btn btn-gold btn-block" onclick="submitNewPassword()">تحديث كلمة المرور</button>
+      <button id="reset-pass-btn" type="button" class="btn btn-gold btn-block" data-action="submitNewPassword">تحديث كلمة المرور</button>
       <div id="reset-pass-msg"></div>
     </div>
 
@@ -892,14 +930,14 @@
         حسابي
       </h3>
       <p id="profile-info" style="font-size:0.95rem;"></p>
-      <button class="btn btn-red btn-block" onclick="logout()">تسجيل الخروج</button>
+      <button class="btn btn-red btn-block" data-action="logout">تسجيل الخروج</button>
     </div>
   </section>
 
   <!-- نافذة تفاصيل المشروع والتقييمات -->
-  <div id="modal-shop" class="modal-overlay hidden" onclick="if(event.target===this) closeShopModal()">
+  <div id="modal-shop" class="modal-overlay hidden" data-action="modalBackdrop" data-args='["closeShopModal"]'>
     <div class="modal-sheet">
-      <button id="close-shop-modal" class="modal-close" onclick="closeShopModal()" aria-label="إغلاق">
+      <button id="close-shop-modal" class="modal-close" data-action="closeShopModal" aria-label="إغلاق">
         <svg class="ic ic-16" viewBox="0 0 24 24" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
       <div id="modal-shop-body"></div>
@@ -925,27 +963,27 @@
 
   <!-- شريط التنقل السفلي -->
   <nav class="bottom-nav">
-    <button id="nav-home" class="nav-item active" onclick="switchView('home')">
+    <button id="nav-home" class="nav-item active" data-action="switchView" data-args='["home"]'>
       <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M9 4L3 6v15l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v15M15 6v15"/></svg>
       الرئيسية
     </button>
-    <button id="nav-request" class="nav-item" onclick="switchView('request')">
+    <button id="nav-request" class="nav-item" data-action="switchView" data-args='["request"]'>
       <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="9"/></svg>
       اطلب خدمة
     </button>
-    <button id="nav-owner" class="nav-item" onclick="switchView('owner')">
+    <button id="nav-owner" class="nav-item" data-action="switchView" data-args='["owner"]'>
       <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0"/><path d="M5 9v10h14V9"/><path d="M9 19v-5h6v5"/></svg>
       مشروعي
     </button>
-    <button id="nav-admin" class="nav-item hidden" onclick="switchView('admin')">
+    <button id="nav-admin" class="nav-item hidden" data-action="switchView" data-args='["admin"]'>
       <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3z"/></svg>
       الإدارة
     </button>
-    <button id="nav-activity" class="nav-item" onclick="switchView('activity')">
+    <button id="nav-activity" class="nav-item" data-action="switchView" data-args='["activity"]'>
       <svg class="ic ic-20" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
       النشاط <span id="activity-unread-badge" class="nav-count hidden">0</span>
     </button>
-    <button id="nav-auth" class="nav-item" onclick="switchView('auth')">
+    <button id="nav-auth" class="nav-item" data-action="switchView" data-args='["auth"]'>
       <svg class="ic ic-20" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
       حسابي
     </button>
@@ -971,5 +1009,6 @@
   <script src="./js/admin.js"></script>
   <script src="./js/notifications.js"></script>
   <script src="./js/main.js"></script>
+  <script src="./js/actions.js"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@ async function renderServiceRequestView() {
   const wrap = document.getElementById('my-service-requests');
   if (!wrap || !currentUser) return;
   wrap.classList.remove('hidden');
-  wrap.innerHTML = '<strong>طلباتي السابقة</strong><p style="color:var(--text-muted);font-size:.8rem;">جاري التحميل...</p>';
+  wrap.innerHTML = '<strong>طلباتي السابقة</strong>' + skeletonCards(2);
   const { data, error } = await sb.from('service_requests').select('id,category,area,details,status,assigned_provider_name,assigned_provider_phone,assignment_notes,created_at').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(20);
   if (error) { wrap.innerHTML = '<strong>طلباتك السابقة</strong><p style="color:var(--text-muted);font-size:.8rem;">نفّذ تحديث قاعدة البيانات المرفق لتفعيل سجل الطلبات.</p>'; return; }
   const labels = {new:'وصلنا طلبك',reviewing:'الإدارة تراجع طلبك',assigned:'تم ربطك بمقدم خدمة',completed:'مكتمل',cancelled:'ملغي'};

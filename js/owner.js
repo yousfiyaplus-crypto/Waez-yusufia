@@ -18,7 +18,15 @@ async function renderOwnerSection() {
     return;
   }
 
-  listEl.innerHTML = myShops.map(s => `
+  ownerShopsCache = Object.fromEntries(myShops.map(s => [s.id, s]));
+  listEl.innerHTML = myShops.map(s => {
+    const views = Number(s.views_count) || 0;
+    const clicks = Number(s.clicks_count) || 0;
+    const rate = views > 0 ? Math.min(100, Math.round((clicks / views) * 100)) : 0;
+    const rev = reviewsSummary[s.id];
+    const rating = rev ? (rev.sum / rev.count).toFixed(1) : '—';
+    const revCount = rev ? rev.count : 0;
+    return `
     <div class="panel-card" style="margin-bottom:0;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
         <div>
@@ -28,26 +36,37 @@ async function renderOwnerSection() {
           </span>
           ${s.is_verified ? `<span class="badge badge-verified">${ICONS.check} معتمد</span>` : ''}
         </div>
-        <div style="font-size:0.8rem;color:var(--text-muted);display:flex;align-items:center;gap:10px;">
-          <span style="display:flex;align-items:center;gap:4px;">${ICONS.eye} ${s.views_count} زيارة</span>
-          <span style="display:flex;align-items:center;gap:4px;">${ICONS.tap} ${s.clicks_count} تواصل</span>
-        </div>
+      </div>
+      <div class="stat-grid" aria-label="إحصائيات المشروع">
+        <div class="stat-tile"><span class="stat-ic">${ICONS.eye}</span><b>${views.toLocaleString('ar-IQ')}</b><small>زيارة</small></div>
+        <div class="stat-tile"><span class="stat-ic">${ICONS.tap}</span><b>${clicks.toLocaleString('ar-IQ')}</b><small>تواصل</small></div>
+        <div class="stat-tile"><span class="stat-ic">${ICONS.check}</span><b>${rate.toLocaleString('ar-IQ')}٪</b><small>نسبة التواصل</small></div>
+        <div class="stat-tile"><span class="stat-ic">${ICONS.star(true)}</span><b>${rating}</b><small>${revCount ? revCount.toLocaleString('ar-IQ') + ' تقييم' : 'لا تقييمات'}</small></div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
-        <button class="btn btn-outline btn-sm" onclick='openOwnerForm(${JSON.stringify(s).replace(/'/g, "&#39;")})'>${ICONS.edit} تعديل الملف</button>
-        <button class="btn btn-green btn-sm" onclick="quickManualStatus('${s.id}','open')"><span class="dot"></span> مفتوح</button>
-        <button class="btn btn-gold btn-sm" onclick="quickManualStatus('${s.id}','duty')"><span class="dot"></span> خفارة</button>
-        <button class="btn btn-red btn-sm" onclick="quickManualStatus('${s.id}','closed')"><span class="dot"></span> مغلق</button>
-        <button class="btn btn-outline btn-sm" onclick="quickManualStatus('${s.id}','auto')">${ICONS.clock} تلقائي</button>
+        <button class="btn btn-outline btn-sm" ${act('openOwnerFormById', s.id)}>${ICONS.edit} تعديل الملف</button>
+        <button class="btn btn-green btn-sm" ${act('quickManualStatus', s.id, 'open')}><span class="dot"></span> مفتوح</button>
+        <button class="btn btn-gold btn-sm" ${act('quickManualStatus', s.id, 'duty')}><span class="dot"></span> خفارة</button>
+        <button class="btn btn-red btn-sm" ${act('quickManualStatus', s.id, 'closed')}><span class="dot"></span> مغلق</button>
+        <button class="btn btn-outline btn-sm" ${act('quickManualStatus', s.id, 'auto')}>${ICONS.clock} تلقائي</button>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
+}
+
+function openOwnerFormById(shopId) {
+  const shop = ownerShopsCache[shopId];
+  if (shop) openOwnerForm(shop);
 }
 
 async function quickManualStatus(shopId, statusVal) {
-  await sb.from('shops').update({ manual_status: statusVal }).eq('id', shopId);
+  if (!['open', 'duty', 'closed', 'auto'].includes(statusVal)) return;
+  const { error } = await sb.from('shops').update({ manual_status: statusVal }).eq('id', shopId);
+  if (error) return showToast('تعذر تحديث حالة الدوام: ' + error.message, 'err', 4500);
   await loadInitialData();
   await renderOwnerSection();
+  showToast('تم تحديث حالة الدوام.', 'ok');
 }
 
 function openOwnerForm(shop = null) {
@@ -134,6 +153,8 @@ function pickCurrentGPS() {
 function previewShopImage(event) {
   const file = event.target.files[0];
   if (!file) return;
+  if (!/^image\//.test(file.type)) return showToast('اختر ملف صورة فقط.', 'err');
+  if (file.size > 12 * 1024 * 1024) return showToast('الصورة كبيرة جداً (الحد 12 ميغابايت).', 'err');
   const reader = new FileReader();
   reader.onload = (e) => {
     const img = new Image();
@@ -147,7 +168,9 @@ function previewShopImage(event) {
       canvas.toBlob((blob) => {
         pendingCompressedBlob = blob;
         const prev = document.getElementById('f-image-preview');
-        prev.src = URL.createObjectURL(blob);
+        if (prev.dataset.blobUrl) URL.revokeObjectURL(prev.dataset.blobUrl);
+        prev.dataset.blobUrl = URL.createObjectURL(blob);
+        prev.src = prev.dataset.blobUrl;
         prev.classList.remove('hidden');
       }, 'image/jpeg', 0.78);
     };
@@ -174,6 +197,8 @@ async function saveShop() {
   const lng = show_on_map ? parseFloat(document.getElementById('f-lng').value) || null : null;
 
   if (!name || !phone) return showMsg('owner-form-msg', 'يرجى كتابة اسم المشروع ورقم الهاتف.', false);
+  if (cleanPhone(phone).replace(/\D/g, '').length < 8) return showMsg('owner-form-msg', 'رقم الهاتف غير صحيح.', false);
+  if (name.length > 100 || description.length > 1000 || daily_offer.length > 200) return showMsg('owner-form-msg', 'أحد الحقول أطول من المسموح.', false);
   if (show_on_map && (!lat || !lng)) return showMsg('owner-form-msg', 'حدد موقعك على الخريطة أو اختر إخفاء الموقع للعمل المنزلي/المتنقل.', false);
 
   const btn = document.getElementById('btn-save-shop');

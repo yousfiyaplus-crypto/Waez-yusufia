@@ -16,6 +16,7 @@ async function openShopModal(shopId, opts = {}) {
   setShopHash(shop.id);
   injectShopJsonLd(shop);
 
+  body.innerHTML = '<div class="sk sk-banner" aria-hidden="true"></div><div class="sk sk-line w60" style="margin:12px 0"></div><div class="sk sk-line w80"></div><div class="sk sk-line w40" style="margin-top:8px"></div>';
   const { data: revs } = await sb.from('reviews')
     .select('*')
     .eq('shop_id', shop.id)
@@ -25,7 +26,7 @@ async function openShopModal(shopId, opts = {}) {
   const myRev = currentUser ? (revs || []).find(r => r.user_id === currentUser.id) : null;
 
   body.innerHTML = `
-    <img src="${safeImageUrl(shop.image_url)}" style="width:100%;max-height:220px;object-fit:cover;border-radius:14px;margin-bottom:10px;" />
+    <img src="${safeImageUrl(shop.image_url)}" alt="${escapeHtml(shop.name)}" style="width:100%;max-height:220px;object-fit:cover;border-radius:14px;margin-bottom:10px;" />
     <div class="shop-title-row">
       <h2 style="margin:0;">${escapeHtml(shop.name)}</h2>
       ${shop.is_verified ? `<span class="badge badge-verified">${ICONS.check} معتمد</span>` : ''}
@@ -39,10 +40,11 @@ async function openShopModal(shopId, opts = {}) {
     <p style="font-size:0.93rem;line-height:1.6;">${escapeHtml(shop.description || 'لا يوجد وصف إضافي.')}</p>
 
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;">
-      <a class="btn btn-green btn-sm" href="tel:${cleanPhone(shop.phone)}" onclick="trackMetric('${shop.id}','click')">${ICONS.phone} اتصال مباشر</a>
-      <a class="btn btn-primary btn-sm" target="_blank" rel="noopener" href="https://wa.me/${waNum}" onclick="trackMetric('${shop.id}','click')">${ICONS.chat} واتساب</a>
-      ${showDir ? `<button type="button" class="btn btn-outline btn-sm" onclick="showRouteInApp('${shop.id}')">${ICONS.pin} المسار</button>` : ''}
-      <button class="btn btn-outline btn-sm" onclick="toggleFav('${shop.id}')" style="${isFav ? 'color:var(--brand-red);' : ''}">${ICONS.heart(isFav)} ${isFav ? 'محفوظ بالمفضلة' : 'حفظ بالمفضلة'}</button>
+      <a class="btn btn-green btn-sm" href="tel:${cleanPhone(shop.phone)}" ${act('trackMetric', shop.id, 'click')}>${ICONS.phone} اتصال مباشر</a>
+      <a class="btn btn-primary btn-sm" target="_blank" rel="noopener" href="https://wa.me/${waNum}" ${act('trackMetric', shop.id, 'click')}>${ICONS.chat} واتساب</a>
+      ${showDir ? `<button type="button" class="btn btn-outline btn-sm" ${act('showRouteInApp', shop.id)}>${ICONS.pin} المسار</button>` : ''}
+      <button class="btn btn-outline btn-sm" ${act('shareShop', shop.id)}>${ico('arrowUR', 15)} مشاركة</button>
+      <button class="btn btn-outline btn-sm" ${act('toggleFav', shop.id)} style="${isFav ? 'color:var(--brand-red);' : ''}">${ICONS.heart(isFav)} ${isFav ? 'محفوظ بالمفضلة' : 'حفظ بالمفضلة'}</button>
     </div>
 
     <hr style="border:none;border-top:1px solid var(--border);margin:14px 0;" />
@@ -50,7 +52,7 @@ async function openShopModal(shopId, opts = {}) {
 
     ${!currentUser ? `
       <div class="panel-card" style="background:#f9fafb;padding:10px;">
-        لضمان حقيقية التقييمات، يرجى <button class="btn btn-primary btn-sm" onclick="closeShopModal();switchView('auth');">تسجيل الدخول</button> لإضافة تقييمك.
+        لضمان حقيقية التقييمات، يرجى <button class="btn btn-primary btn-sm" ${act('goToAuthFromModal')}>تسجيل الدخول</button> لإضافة تقييمك.
       </div>
     ` : isOwner ? `
       <div class="msg-box msg-ok">هذا مشروعك الخاص — يمكنك متابعة التقييمات والإبلاغ عن أي تقييم مزيف من هنا.</div>
@@ -60,11 +62,11 @@ async function openShopModal(shopId, opts = {}) {
       <div class="panel-card" style="background:#f9fafb;padding:12px;">
         <div style="font-weight:700;font-size:0.86rem;">أضف تقييمك الحقيقي (مرة واحدة فقط):</div>
         <div class="star-select" id="rev-stars">
-          ${[1,2,3,4,5].map(n => `<button type="button" class="star-btn active" onclick="setReviewStars(${n})">${ICONS.star(true).replace('ic-14','ic-22')}</button>`).join('')}
+          ${[1,2,3,4,5].map(n => `<button type="button" class="star-btn active" ${act('setReviewStars', n)}>${ICONS.star(true).replace('ic-14','ic-22')}</button>`).join('')}
         </div>
         <input type="hidden" id="rev-rating-val" value="5" />
         <textarea id="rev-comment" class="form-control" rows="2" placeholder="اكتب تجربتك بكل أمانة..."></textarea>
-        <button id="rev-submit-btn" class="btn btn-gold btn-sm" style="margin-top:8px;" onclick="submitReview('${shop.id}')">إرسال التقييم للمراجعة</button>
+        <button id="rev-submit-btn" class="btn btn-gold btn-sm" style="margin-top:8px;" ${act('submitReview', shop.id)}>إرسال التقييم للمراجعة</button>
         <div id="rev-msg"></div>
       </div>
     `}
@@ -77,7 +79,7 @@ async function openShopModal(shopId, opts = {}) {
             <span style="color:var(--brand-gold);display:flex;gap:1px;">${ICONS.star(true).repeat(r.rating)}</span>
           </div>
           <p style="margin:4px 0;font-size:0.88rem;">${escapeHtml(r.comment || '')}</p>
-          ${isOwner && !r.is_reported ? `<button class="btn btn-outline btn-sm" onclick="reportFakeReview('${r.id}','${shop.id}')">${ICONS.flag} إبلاغ الإدارة عن تقييم مزيف</button>` : ''}
+          ${isOwner && !r.is_reported ? `<button class="btn btn-outline btn-sm" ${act('reportFakeReview', r.id, shop.id)}>${ICONS.flag} إبلاغ الإدارة عن تقييم مزيف</button>` : ''}
           ${r.is_reported ? '<small style="color:var(--brand-red);">تم إرسال بلاغ للإدارة لفحص هذا التقييم</small>' : ''}
         </div>
       `).join('')}
@@ -131,7 +133,8 @@ async function reportFakeReview(reviewId, shopId) {
     placeholder: 'مثال: نفس الشخص يقيّم من أكثر من حساب',
   });
   if (!reason) return;
-  await sb.rpc('report_review', { p_review_id: reviewId, p_reason: reason });
+  const { error } = await sb.rpc('report_review', { p_review_id: reviewId, p_reason: String(reason).slice(0, 300) });
+  if (error) return showToast('تعذر إرسال البلاغ: ' + error.message, 'err', 4500);
   showToast(`${ICONS.check} تم رفع البلاغ للإدارة لفحص حساب المقيّم.`, 'ok');
   openShopModal(shopId);
 }

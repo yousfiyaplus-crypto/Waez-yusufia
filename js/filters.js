@@ -1,9 +1,9 @@
 // js/filters.js — تصنيفات الأقسام، الفلاتر السريعة، وتحديد موقع المستخدم.
 function renderCategoryPills() {
   const wrap = document.getElementById('category-pills');
-  let html = `<button class="pill ${selectedCategory === 'all' ? 'active' : ''}" onclick="selectCategory('all')">الكل</button>`;
+  let html = `<button class="pill ${selectedCategory === 'all' ? 'active' : ''}" ${act('selectCategory', 'all')}>الكل</button>`;
   categories.forEach(c => {
-    html += `<button class="pill ${selectedCategory === c.id ? 'active' : ''}" onclick="selectCategory(${c.id})">${catIcon(c, 15)} ${escapeHtml(c.name)}</button>`;
+    html += `<button class="pill ${selectedCategory === c.id ? 'active' : ''}" ${act('selectCategory', c.id)}>${catIcon(c, 15)} ${escapeHtml(c.name)}</button>`;
   });
   wrap.innerHTML = html;
 }

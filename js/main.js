@@ -10,16 +10,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
 
   initMainMap();
-  ['gesturestart', 'gesturechange', 'gestureend'].forEach(evt => {
-    document.addEventListener(evt, (e) => {
-      if (!e.target.closest('.leaflet-container')) e.preventDefault();
-    }, { passive: false });
-  });
-  document.addEventListener('touchmove', (e) => {
-    if (e.touches && e.touches.length > 1 && !e.target.closest('.leaflet-container')) {
-      e.preventDefault();
-    }
-  }, { passive: false });
+  // ملاحظة: أُزيل منع التكبير بالإصبعين (pinch-zoom) لأنه يضر إمكانية الوصول لضعاف البصر.
+  renderShopsSkeleton();
   await checkAuthSession();
   await loadInitialData();
   updateDailyHub();
@@ -27,17 +19,21 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (currentUser) subscribeToNotifications();
   applyRouteFromHash();
 
-  sb.auth.onAuthStateChange(async (_event, session) => {
+  // مهم: لا نستدعي Supabase مباشرة داخل callback الخاص بـ onAuthStateChange (قد يسبب تعليقاً/Deadlock)،
+  // لذلك نؤجّل العمل إلى الدورة التالية عبر setTimeout.
+  sb.auth.onAuthStateChange((event, session) => {
     currentUser = session?.user || null;
-    await loadCurrentProfile();
-    updateAuthUI();
-    if (activityRealtimeChannel) { sb.removeChannel(activityRealtimeChannel); activityRealtimeChannel = null; }
-    await refreshNotificationBadge();
-    if (currentUser) subscribeToNotifications();
-    if (_event === 'PASSWORD_RECOVERY') {
-      switchView('auth');
-      showResetPasswordBox();
-    }
+    setTimeout(async () => {
+      await loadCurrentProfile();
+      updateAuthUI();
+      if (activityRealtimeChannel) { sb.removeChannel(activityRealtimeChannel); activityRealtimeChannel = null; }
+      await refreshNotificationBadge();
+      if (currentUser) subscribeToNotifications();
+      if (event === 'PASSWORD_RECOVERY') {
+        switchView('auth');
+        showResetPasswordBox();
+      }
+    }, 0);
   });
 });
 
@@ -96,12 +92,20 @@ function switchView(viewName) {
 
 // ===== تحميل البيانات الأولية =====
 async function loadInitialData() {
-  const [catRes, setRes, shopRes, revRes] = await Promise.all([
+  let catRes, setRes, shopRes, revRes;
+  try {
+    [catRes, setRes, shopRes, revRes] = await Promise.all([
     sb.from('categories').select('*').order('sort_order'),
     sb.from('app_settings').select('*'),
     sb.from('shops').select('*').eq('status', 'approved').order('created_at', { ascending: false }),
     sb.from('reviews').select('shop_id, rating').eq('status', 'approved')
-  ]);
+    ]);
+  } catch (err) {
+    console.error(err);
+    showLoadError();
+    return;
+  }
+  if (shopRes.error && !allShops.length) { showLoadError(); return; }
 
   categories = catRes.data || [];
   const settingsMap = {};
@@ -125,5 +129,16 @@ async function loadInitialData() {
   populateCategorySelect();
   document.getElementById('map-wrapper').classList.toggle('hidden', !mapEnabledSetting);
   renderShops();
+}
+
+function showLoadError() {
+  const c = document.getElementById('shops-list');
+  if (!c) return;
+  c.innerHTML = `<div class="empty-state"><p>تعذر تحميل البيانات. تأكد من اتصالك بالإنترنت ثم حاول مرة ثانية.</p><button class="btn btn-gold btn-sm" ${act('retryLoad')}>إعادة المحاولة</button></div>`;
+}
+
+async function retryLoad() {
+  renderShopsSkeleton();
+  await loadInitialData();
 }
 
